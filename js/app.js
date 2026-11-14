@@ -386,17 +386,12 @@ const ACT = {
   },
   toggleCode() { U.showCode = !U.showCode; sfx.tap(); render(); },
   async startTrial() {
-    const pays = payMethods(), pay = pays.find((x) => x.id === U.pay) || pays[0];
-    const digits = U.phone.replace(/\D/g, '');
-    if (pay.phone && digits.length !== pay.len) { sfx.error(); toast('Entre ton numéro ' + pay.label + ' (' + pay.len + ' chiffres).'); document.getElementById('pay-phone')?.focus(); return; }
     if (!navigator.onLine) { sfx.error(); toast("Connexion internet nécessaire pour activer l'essai."); return; }
-    S.pay = { method: pay.id, phone: pay.phone ? pay.dial + digits : '' };
     try {
       await flush(S, api);
       const r = await api.startTrial(U.offerPlan);
       if (!r || !r.ok) { sfx.error(); toast(r && r.error === 'trial_used' ? 'Tu as déjà utilisé ton essai gratuit sur ce téléphone.' : "Impossible d'activer l'essai pour le moment."); return; }
-      S.trial = { plan: r.plan, startedAt: r.started_at, cancelledAt: null };
-      enqueue(S, { t: 'pay', method: S.pay.method, phone: S.pay.phone }); persist(); sync();
+      S.trial = { plan: r.plan, startedAt: r.started_at, cancelledAt: null }; persist(); sync();
       go('home'); celebrate(true); toast('Essai Plus activé : 72 h offertes, sans engagement.');
     } catch (e) { sfx.error(); toast('Connexion instable. Réessaie dans un instant.'); }
   },
@@ -411,11 +406,18 @@ const ACT = {
   payChariow() {
     const link = (CONFIG.chariow || {})[U.offerPlan];
     if (!link) { sfx.error(); toast('Cette formule arrive très bientôt. Choisis-en une autre pour l’instant.'); return; }
-    sfx.success(); U.showKey = true; render();
+    sfx.success(); U.showKey = true; U.awaitKey = true; render();
     window.open(link, '_blank', 'noopener');
-    toast('Après le paiement, tu recevras ta clé : colle-la ici pour activer Plus.');
+    toast('Après le paiement, reviens ici et colle ta clé.');
   },
   openKey() { U.showKey = true; go('offers'); setTimeout(() => document.querySelector('[data-input=licKey]')?.focus(), 400); },
+  async pasteKey() {
+    try {
+      const t = (await navigator.clipboard.readText() || '').trim();
+      if (!t) { toast('Rien à coller. Copie d’abord ta clé.'); return; }
+      U.licKey = t.slice(0, 120); sfx.tick(); render();
+    } catch (e) { toast('Appuie longuement dans la case puis « Coller ».'); document.querySelector('[data-input=licKey]')?.focus(); }
+  },
   toggleKey() { U.showKey = !U.showKey; sfx.tap(); render(); },
   async activateKey() {
     const key = (U.licKey || '').trim();
@@ -556,6 +558,12 @@ root.addEventListener('pointerup', (e) => {
 root.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.id === 'f-name') { e.preventDefault(); ACT.setupNext(); } });
 root.addEventListener('submit', (e) => { const f = e.target.dataset.form; if (!f) return; e.preventDefault(); if (f === 'chat') ask(U.chatDraft); if (f === 'code') redeem(); if (f === 'lic') ACT.activateKey(); });
 window.addEventListener('online', () => sync());
+// Retour depuis la page de paiement : on ouvre la case de la clé et on y place le curseur
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || !U.awaitKey || U.screen !== 'offers') return;
+  U.showKey = true; render();
+  setTimeout(() => { const el = document.querySelector('[data-input=licKey]'); if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.focus(); } }, 250);
+});
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; if (U.screen === 'profile') render(); });
 window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (S.onboarded && S.profile.assessedAt && VIEWS[h] && !['onb', 'setup'].includes(h) && h !== U.screen) go(h); });
 

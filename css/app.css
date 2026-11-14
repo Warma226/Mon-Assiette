@@ -698,3 +698,22 @@ html.theme-dark,html.theme-dark body{background:#070A08}
 .dd-ok{width:24px;height:24px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center}
 .theme-dark .dd-btn,.theme-dark .dd-list{background:#18201B;border-color:rgba(255,255,255,.1)}
 .theme-dark .dd-opt.on,.theme-dark .dd-opt:active{background:#14261A}
+/* Page de paiement */
+.offers-page .plan{min-height:84px}
+.key-box{border:2px solid transparent;transition:border-color .3s}
+.key-box .link-row b{font-weight:600}
+.key-row{display:flex;gap:8px;align-items:center}
+.key-row .field{flex:1;min-width:0;font-family:ui-monospace,Menlo,monospace;letter-spacing:.5px}
+.how{list-style:none;padding:0;margin:4px 0 0;display:flex;flex-direction:column;gap:12px}
+.how li{display:flex;align-items:center;gap:12px}
+.how li>span:last-child{display:flex;flex-direction:column;gap:2px}
+.how li small{color:var(--muted);line-height:1.35}
+.how-n{width:26px;height:26px;border-radius:50%;background:var(--green);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+.accepted{display:flex;flex-direction:column;gap:10px;margin-top:6px;padding-top:12px;border-top:1px solid var(--line)}
+.acc-logos{display:flex;flex-wrap:wrap;gap:12px}
+.acc{display:flex;flex-direction:column;align-items:center;gap:4px;width:72px;text-align:center}
+.acc small{font-size:11px;color:var(--muted);line-height:1.2}
+.acc-logo{width:44px;height:44px;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.acc-logo img{width:100%;height:100%;object-fit:cover}
+.acc-logo.card-logo{background:#F2F3F2}
+.theme-dark .acc-logo.card-logo{background:#212B25}

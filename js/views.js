@@ -502,64 +502,74 @@ export function profile(S, U, C) {
 }
 
 /* ================= Offres ================= */
-function payTile(m, on) {
-  const inner = m.logo
-    ? `<span class="pay-logo" style="background:${m.color}">${img3d('mobile-phone', 26)}<img class="brand" src="${m.logo}" alt="${m.label}" onerror="this.remove()"></span>`
-    : `<span class="pay-logo" style="background:${m.color}">${img3d(m.icon, 30)}</span>`;
-  return `<button class="pay tap ${on ? 'on' : ''}" data-act="pickPay" data-arg="${m.id}" aria-pressed="${on}">${inner}<span>${m.label}</span></button>`;
-}
 export function offers(S, U, C) {
-  const chosen = PLANS.find((p) => p.id === U.offerPlan) || PLANS[1];
-  const methods = C.payMethods, payment = methods.find((x) => x.id === U.pay) || methods[0];
-  const digits = (U.phone || '').replace(/\D/g, '');
-  const len = payment.len || 8;
-  const phoneOk = !payment.phone || digits.length === len;
+  const chosen = PLANS.find((p) => p.id === U.offerPlan) || PLANS[PLANS.length - 1];
   const canTrial = !C.paid && (!C.trialUsed || C.trialOn);
+  const freshTrial = canTrial && !C.trialOn;
   const until = C.paidUntil ? C.paidUntil.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
-  const tag = C.paid ? 'PLUS ACTIF' : canTrial ? 'ESSAI GRATUIT' : 'PAIEMENT MOBILE MONEY';
-  const big = C.paid ? 'Merci pour ton soutien !' : canTrial ? '72 heures offertes' : 'Continue avec Plus';
-  const small = C.paid ? `Plus est actif jusqu’au ${until}.` : canTrial ? "Rien à payer aujourd'hui. Tu arrêtes en un clic." : 'Paie en 1 minute par Mobile Money, puis active ta clé ici.';
   const link = C.chariowLink(chosen.id);
-  const chariowBtn = (label) => cta(label, 'payChariow', { pulse: !canTrial, icon: 'check', sub: link ? 'Orange Money, Moov, Wave… · paiement sécurisé Chariow' : 'Cette formule arrive très bientôt', disabled: !link, id: 'pay-cta' });
-  const keyBox = `<div class="card stack key-box ${U.showKey ? 'open' : ''}">
-      <button class="link-row" data-act="toggleKey">${img3d('sparkles', 22)} Tu as déjà payé ? Active ta clé<span>${U.showKey ? '˄' : '›'}</span></button>
-      ${U.showKey ? `<form class="stack" data-form="lic"><small class="muted">Colle la clé reçue après ton paiement (par e-mail ou sur la page de confirmation).</small>
-        <input class="field" type="text" value="${esc(C.licKey)}" placeholder="Ex. MA-XXXX-XXXX-XXXX" data-input="licKey" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="120">
-        <button type="submit" class="btn-dark tap" ${C.licBusy ? 'disabled' : ''}>${C.licBusy ? 'Vérification…' : 'Activer ma clé'}</button></form>` : ''}
-    </div>`;
-  const payBtn = (label) => cta(C.paying ? 'Ouverture du paiement…' : label, 'payNow', { pulse: !canTrial, icon: 'check', sub: 'Paiement sécurisé PayDunya · Mobile Money ou carte', disabled: C.paying, id: 'pay-cta' });
-  return `<section class="page">
+  const ops = C.payMethods.filter((m) => m.id !== 'card');
+  const keyOpen = U.showKey || (!freshTrial && !C.paid && !C.trialOn);
+
+  // En-tête selon la situation
+  const hero = C.paid
+    ? { tag: 'PLUS ACTIF', big: 'Merci pour ton soutien !', small: `Plus est actif jusqu’au ${until}. Tu peux prolonger quand tu veux : les jours s’ajoutent.`, pose: 'bravo' }
+    : C.trialOn ? { tag: 'ESSAI EN COURS', big: `Encore ${C.hoursLeft} h d’essai`, small: 'Garde Plus après l’essai en payant par Mobile Money.', pose: 'clin' }
+    : freshTrial ? { tag: 'ESSAI GRATUIT', big: '72 heures offertes', small: 'Rien à payer, aucun numéro demandé. Tu arrêtes quand tu veux.', pose: 'bravo' }
+    : { tag: 'MON ASSIETTE PLUS', big: 'Continue avec Plus', small: 'Paie en 1 minute par Mobile Money, puis active ta clé ici.', pose: 'joie' };
+
+  const payCta = (label) => cta(label, 'payChariow', { pulse: !freshTrial, icon: 'check', sub: link ? 'Mobile Money ou carte · page sécurisée Chariow' : 'Cette formule arrive très bientôt', disabled: !link, id: 'pay-cta' });
+  const actions = C.paid ? payCta('Prolonger : ' + chosen.price + ' · ' + chosen.name)
+    : freshTrial ? cta("Commencer l'essai gratuit", 'startTrial', { pulse: true, sub: 'Puis ' + chosen.price + ' ' + chosen.per + ' si tu continues · sans engagement', id: 'trial-cta' })
+      + `<button class="link center" data-act="payChariow">Ou payer ${chosen.price} tout de suite</button>`
+    : payCta('Payer ' + chosen.price + ' · ' + chosen.name);
+
+  const steps = [
+    ['mobile-phone', 'Paie sur la page sécurisée', (ops.length ? ops.map((m) => m.label).join(', ') + ' ou carte' : 'Mobile Money ou carte') + '. Le paiement se fait sur Chariow.'],
+    ['sparkles', 'Reçois ta clé', 'Elle s’affiche après le paiement et arrive aussi par e-mail.'],
+    ['party-popper', 'Colle-la ici', 'Plus s’active tout de suite, sur ce téléphone.']
+  ];
+
+  return `<section class="page offers-page">
     ${header('Mon Assiette <span class="green">Plus</span>')}
-    <div class="promo hero fu d2"><div class="promo-kalou">${kalou('bravo', 108)}</div>
-      <span><small class="tag">${tag}</small><b>${big}</b><em>${small}</em></span></div>
-    ${C.paid ? `<div class="card dark stack popnow"><b class="h3">${PLAN_NAMES[C.paidPlan] || 'Mon Assiette Plus'} · actif</b><small>Encore ${C.daysLeft} jour${C.daysLeft > 1 ? 's' : ''}, jusqu’au ${until}. Tu peux prolonger à tout moment : les jours s’ajoutent.</small></div>`
-      : C.trialOn ? `<div class="card dark stack popnow"><b class="h3">Ton essai ${PLAN_NAMES[S.trial.plan]} est actif</b><small>Il te reste ${C.hoursLeft} h.</small><button class="btn-ghost tap" data-act="cancelTrial">Arrêter l'essai</button></div>` : ''}
-    ${C.payMode === 'test' && C.payReady ? '<div class="note warn">Paiement en mode test : aucun argent réel n’est prélevé.</div>' : ''}
-    <div class="fu d3 stack">${PLANS.map((p) => `<button class="plan tap ${p.id === chosen.id ? 'on' : ''}" data-act="pickPlan" data-arg="${p.id}" aria-pressed="${p.id === chosen.id}"><span class="radio"><i></i></span><span class="grow"><b>${p.name}</b><small>${p.desc}</small></span><span class="price"><b>${p.price}</b><small>${p.per}</small></span>${p.popular ? '<span class="ribbon">Le plus choisi</span>' : p.best ? '<span class="ribbon gold">Meilleur prix</span>' : ''}</button>`).join('')}</div>
-    <div class="card fu d4 feat"><div class="feat-row head"><span>Ce qui est inclus</span><span>Gratuit</span><span class="green">Plus</span></div>
-      ${FEATURES.map((f) => `<div class="feat-row"><span>${f[0]}</span><span class="${f[1] === '—' ? 'no' : 'yes'}">${f[1]}</span><span class="yes b">${f[2]}</span></div>`).join('')}</div>
-    <div class="fu d5 stack">
-      <span class="lbl">Payer avec ${canTrial ? "(après l'essai)" : ''}</span>
-      <div class="pays" style="grid-template-columns:repeat(${Math.min(methods.length, 3)},minmax(0,1fr))">${methods.map((m) => payTile(m, m.id === payment.id)).join('')}</div>
-      ${C.country && !C.country.ops.length ? '<small class="muted">Le Mobile Money de ton pays arrive bientôt. En attendant, la carte est possible.</small>' : ''}
-      ${payment.phone ? `<label for="pay-phone" class="lbl">Ton numéro ${payment.label}</label>
-        <div class="phone ${digits.length === 0 ? '' : phoneOk ? 'ok' : 'warn'}"><span>${payment.dial}</span><input id="pay-phone" type="tel" inputmode="numeric" value="${esc(U.phone)}" placeholder="${{ 8: '70 00 00 00', 9: '77 000 00 00', 10: '07 00 00 00 00' }[len] || ''}" maxlength="${len + 4}" data-input="phone" autocomplete="tel-national"></div>
-        <small class="muted" id="phone-hint">${digits.length === 0 ? len + ' chiffres. Aucun paiement maintenant.' : phoneOk ? 'Numéro valide.' : digits.length < len ? 'Encore ' + (len - digits.length) + ' chiffre(s).' : 'Trop de chiffres (' + len + ' attendus).'}</small>`
-      : '<small class="muted">La carte sera demandée de façon sécurisée, seulement si tu continues après l’essai.</small>'}
+    <div class="promo hero fu d2"><div class="promo-kalou">${kalou(hero.pose, 108)}</div>
+      <span><small class="tag">${hero.tag}</small><b>${hero.big}</b><em>${hero.small}</em></span></div>
+    ${C.trialOn ? `<div class="thin-bar fu d2"><div style="width:${Math.round(C.hoursLeft / 72 * 100)}%"></div></div>` : ''}
+
+    <div class="fu d3 stack">
+      <span class="lbl">Choisis ta formule</span>
+      ${PLANS.map((p) => `<button class="plan tap ${p.id === chosen.id ? 'on' : ''}" data-act="pickPlan" data-arg="${p.id}" aria-pressed="${p.id === chosen.id}"><span class="radio"><i></i></span><span class="grow"><b>${p.name}</b><small>${p.desc}</small></span><span class="price"><b>${p.price}</b><small>${p.per}</small></span>${p.popular ? '<span class="ribbon">Le plus choisi</span>' : ''}</button>`).join('')}
     </div>
-    <div class="fu d6 stack">
-      ${C.paid ? chariowBtn('Prolonger : payer ' + chosen.price)
-      : canTrial ? cta(C.trialOn ? 'Passer à la formule ' + chosen.name : "Commencer l'essai gratuit", 'startTrial', { pulse: true, sub: 'puis ' + chosen.price + ' ' + chosen.per + ' · sans engagement', disabled: !phoneOk, id: 'trial-cta' })
-        + `<button class="link center" data-act="payChariow">${C.trialOn ? 'Payer ' + chosen.price + ' maintenant et garder Plus' : 'Ou payer ' + chosen.price + ' tout de suite'}</button>`
-      : chariowBtn('Payer ' + chosen.price + ' · formule ' + chosen.name)}
-      ${keyBox}
-      <div class="card stack">
-        <button class="link-row" data-act="toggleCode">Code entreprise ou mutuelle ?<span>${U.showCode ? '˄' : '›'}</span></button>
-        ${U.showCode ? `<form class="row" data-form="code"><label for="org-code" class="sr">Code</label><input id="org-code" class="field sm" type="text" value="${esc(U.code)}" placeholder="Ex. DEMO2026" data-input="code" autocapitalize="characters" maxlength="30"><button type="submit" class="btn-dark tap">Valider</button></form>` : ''}
-        <button class="link-row" data-act="invite">Inviter un ami<span>›</span></button>
+
+    <div class="fu d4 stack">${actions}</div>
+
+    <div class="card stack key-box fu d4 ${keyOpen ? 'open' : ''}" id="key-box">
+      <button class="link-row" data-act="toggleKey">${img3d('sparkles', 22)} <b>Tu as payé ? Active ta clé</b><span>${keyOpen ? '˄' : '›'}</span></button>
+      ${keyOpen ? `<form class="stack" data-form="lic">
+        <div class="key-row"><input class="field" type="text" value="${esc(C.licKey)}" placeholder="Colle ta clé ici" data-input="licKey" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="120" aria-label="Clé d’activation">
+          <button type="button" class="chip-btn light tap" data-act="pasteKey">Coller</button></div>
+        <button type="submit" class="btn-dark tap" ${C.licBusy ? 'disabled' : ''}>${C.licBusy ? 'Vérification…' : 'Activer ma clé'}</button>
+        <small class="muted">1 clé = 1 téléphone. Garde ta clé : elle sert de preuve d’achat.</small></form>` : ''}
+    </div>
+
+    <div class="card stack fu d5">
+      <b class="h3">Comment payer ?</b>
+      <ol class="how">${steps.map((st, i) => `<li><span class="how-n">${i + 1}</span>${img3d(st[0], 30)}<span><b>${st[1]}</b><small>${st[2]}</small></span></li>`).join('')}</ol>
+      <div class="accepted"><small class="muted">Paiement accepté${C.country && !C.country.id.startsWith('autre') ? ' ' + esc(C.country.in) : ''} :</small>
+        <div class="acc-logos">${ops.map((m) => `<span class="acc" title="${m.label}">${m.logo ? `<span class="acc-logo" style="background:${m.color}"><img src="${m.logo}" alt="${m.label}" onerror="this.remove()"></span>` : ''}<small>${m.label}</small></span>`).join('')}<span class="acc"><span class="acc-logo card-logo">${img3d('credit-card', 24)}</span><small>Carte bancaire</small></span></div>
       </div>
-      <p class="fine">Rappel avant la fin de l'essai. Aucun prélèvement si tu arrêtes avant 72 h. Prix en F CFA, frais Mobile Money inclus : tu paies exactement ce prix.</p>
     </div>
+
+    <div class="card fu d5 feat"><div class="feat-row head"><span>Ce qui est inclus</span><span>Gratuit</span><span class="green">Plus</span></div>
+      ${FEATURES.map((f) => `<div class="feat-row"><span>${f[0]}</span><span class="${f[1] === '—' ? 'no' : 'yes'}">${f[1]}</span><span class="yes b">${f[2]}</span></div>`).join('')}</div>
+
+    ${C.trialOn ? `<button class="link center" data-act="cancelTrial">Arrêter mon essai</button>` : ''}
+    <div class="card stack fu d6">
+      <button class="link-row" data-act="toggleCode">Code entreprise ou mutuelle ?<span>${U.showCode ? '˄' : '›'}</span></button>
+      ${U.showCode ? `<form class="row" data-form="code"><label for="org-code" class="sr">Code</label><input id="org-code" class="field sm" type="text" value="${esc(U.code)}" placeholder="Ex. DEMO2026" data-input="code" autocapitalize="characters" maxlength="30"><button type="submit" class="btn-dark tap">Valider</button></form>` : ''}
+      <button class="link-row" data-act="invite">Inviter un ami<span>›</span></button>
+    </div>
+    <p class="fine">Prix en F CFA, frais Mobile Money inclus. Pas de prélèvement automatique : tu paies seulement quand tu veux prolonger. L’essai gratuit est valable une fois par téléphone.</p>
   </section>`;
 }
 
