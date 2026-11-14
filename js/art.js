@@ -122,3 +122,25 @@ export function icon(name, size = 22, color = 'currentColor', width = 1.9) {
 }
 
 export const BELL_FILLED = img3d('bell', 30);
+
+/* ---------- Drapeaux (dessinés en SVG, proportions 3:2) ---------- */
+const star = (cx, cy, r, fill) => {
+  const pts = [...Array(10)].map((_, i) => { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.4 : r; return `${(cx + rr * Math.cos(a)).toFixed(2)},${(cy + rr * Math.sin(a)).toFixed(2)}`; }).join(' ');
+  return `<polygon points="${pts}" fill="${fill}"/>`;
+};
+const vbands = (c) => c.map((col, i) => `<rect x="${i}" y="0" width="1.01" height="2" fill="${col}"/>`).join('');
+const FLAGS = {
+  bf: `<rect width="3" height="1" fill="#EF2B2D"/><rect y="1" width="3" height="1" fill="#009E49"/>${star(1.5, 1, 0.34, '#FCD116')}`,
+  ci: vbands(['#F77F00', '#FFFFFF', '#009E60']),
+  sn: vbands(['#00853F', '#FDEF42', '#E31B23']) + star(1.5, 1, 0.3, '#00853F'),
+  ml: vbands(['#14B53A', '#FCD116', '#CE1126']),
+  bj: `<rect width="1.2" height="2" fill="#008751"/><rect x="1.2" width="1.8" height="1" fill="#FCD116"/><rect x="1.2" y="1" width="1.8" height="1" fill="#E8112D"/>`,
+  tg: [0, 1, 2, 3, 4].map((i) => `<rect y="${i * 0.4}" width="3" height="0.41" fill="${i % 2 ? '#FFCE00' : '#006A4E'}"/>`).join('') + `<rect width="1.2" height="1.2" fill="#D21034"/>${star(0.6, 0.6, 0.38, '#FFFFFF')}`,
+  ne: `<rect width="3" height="0.67" fill="#E05206"/><rect y="0.66" width="3" height="0.68" fill="#FFFFFF"/><rect y="1.33" width="3" height="0.67" fill="#0DB02B"/><circle cx="1.5" cy="1" r="0.2" fill="#E05206"/>`,
+  gn: vbands(['#CE1126', '#FCD116', '#009460'])
+};
+export function flag(id, w = 30) {
+  const h = Math.round(w * 2 / 3);
+  if (!FLAGS[id]) return `<span class="flag globe" style="width:${w}px;height:${h}px">🌍</span>`;
+  return `<svg class="flag" width="${w}" height="${h}" viewBox="0 0 3 2" aria-hidden="true">${FLAGS[id]}</svg>`;
+}

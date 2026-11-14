@@ -1,6 +1,6 @@
 // Écrans de Mon Assiette. Chaque fonction renvoie du HTML ; les actions passent par data-act.
 
-import { kalou, img3d, icon } from './art.js';
+import { kalou, img3d, icon, flag } from './art.js';
 import {
   SLIDES, SEXES, AGES, ACTIVITIES, GOALS, CONDITIONS, PREGNANCY, ALLERGENS, DIETS, HABITS,
   DISHES, SLOT_INFO, SLOT_WHY, NUTRIENTS, TAG_BENEFIT, HOW, PANTRY, CHAT_CHIPS,
@@ -99,14 +99,17 @@ export function setup(S, U) {
     body = `<label for="f-name" class="lbl">Ton prénom</label>
       <input id="f-name" class="field ${d.name.trim() ? 'ok' : ''}" type="text" value="${esc(d.name)}" placeholder="Ex. Aminata" autocomplete="given-name" maxlength="40" data-input="name" enterkeyhint="next">`;
   } else if (step === 1) {
-    const at = new Date();
-    body = COUNTRIES.map((c) => {
-      const on = d.country === c.id;
-      return `<button class="opt country tap ${on ? 'on' : ''}" data-act="setCountry" data-arg="${c.id}" aria-pressed="${on}">
-        <span class="cc">${c.id.startsWith('autre') ? '·' : c.id.toUpperCase()}</span>
-        <span class="opt-txt"><b>${c.label}</b><small>${c.gmt} · il y est ${hhmm(wallClock(c.tz, at))}${c.dial ? ' · ' + c.dial : ''}</small></span>
-        <span class="opt-radio">${icon('check', 12, '#fff', 3.4)}</span></button>`;
-    }).join('') + '<small class="muted">Le fuseau horaire choisi règle l’heure de l’app, même si ton téléphone est réglé autrement.</small>';
+    const at = new Date(), cur = COUNTRIES.find((c) => c.id === d.country);
+    const line = (c) => `${flag(c.id, 36)}<span class="opt-txt"><b>${c.label}</b><small>${c.gmt} · il y est ${hhmm(wallClock(c.tz, at))}${c.dial ? ' · ' + c.dial : ''}</small></span>`;
+    body = `<span class="lbl">Ton pays de résidence</span>
+      <div class="dd ${U.ddOpen ? 'open' : ''}">
+        <button class="dd-btn tap" data-act="toggleDd" aria-haspopup="listbox" aria-expanded="${!!U.ddOpen}">
+          ${cur ? line(cur) : `<span class="dd-ph">${flag('', 36)}<span class="opt-txt"><b>Choisis ton pays</b><small>Touche pour voir la liste</small></span></span>`}
+          <span class="dd-chev">${icon('next', 18, '#3C433D', 2.2)}</span>
+        </button>
+        ${U.ddOpen ? `<div class="dd-list" role="listbox" aria-label="Pays">${COUNTRIES.map((c) => `<button class="dd-opt tap ${d.country === c.id ? 'on' : ''}" role="option" aria-selected="${d.country === c.id}" data-act="setCountry" data-arg="${c.id}">${line(c)}${d.country === c.id ? `<span class="dd-ok">${icon('check', 14, '#fff', 3.2)}</span>` : ''}</button>`).join('')}</div>` : ''}
+      </div>
+      <small class="muted">Le fuseau horaire choisi règle l’heure de l’app, même si ton téléphone est réglé autrement.</small>`;
   } else if (step === 2) {
     body = `${lblQ('Tu es', true)}${pills(SEXES, d.sex, 'setSex')}
       ${lblQ('Ton âge', true)}${pills(AGES, d.age, 'setAge')}
@@ -465,7 +468,7 @@ export function profile(S, U, C) {
     <div class="card list fu d3">
       <button class="li tap" data-act="go" data-arg="bilan"><span class="row">${img3d('clipboard', 28)}<b>Mon bilan nutritionnel</b></span>›</button>
       <button class="li tap" data-act="editProfile"><span class="row">${img3d('counterclockwise-arrows-button', 28)}<b>Refaire mon bilan</b></span>›</button>
-      <button class="li tap" data-act="askCountry"><span class="row">${img3d('alarm-clock', 28)}<span><b>${C.country ? esc(C.country.label) : 'Choisir mon pays'}</b><small>${C.country ? 'Heure de l’app : ' + hhmm(C.now) + ' (' + C.country.gmt + ')' : 'Pour ton menu et ton heure'}</small></span></span>›</button>
+      <button class="li tap" data-act="askCountry"><span class="row">${C.country ? flag(C.country.id, 30) : img3d('alarm-clock', 28)}<span><b>${C.country ? esc(C.country.label) : 'Choisir mon pays'}</b><small>${C.country ? 'Heure de l’app : ' + hhmm(C.now) + ' (' + C.country.gmt + ')' : 'Pour ton menu et ton heure'}</small></span></span>›</button>
       <button class="li tap" data-act="toggleSound" role="switch" aria-checked="${S.sound}"><span class="row">${img3d(S.sound ? 'speaker-high-volume' : 'muted-speaker', 28)}<b>Sons</b></span><span class="switch ${S.sound ? 'on' : ''}"><i></i></span></button>
       <div class="li voice-li"><span class="row">${img3d('speech-balloon', 28)}<span><b>Voix de Kalou</b><small>${C.cloudVoice ? esc(C.cloudVoice.label) + ' · voix humaine' : C.voiceNow ? esc(C.prettyVoice(C.voiceNow)) : 'Voix du téléphone'}</small></span></span>
         <button class="chip-btn light tap ${U.speaking === 'test' ? 'speaking' : ''}" data-act="testVoice">${img3d('speaker-high-volume', 16)} ${U.speaking === 'test' ? 'Stop' : 'Essayer'}</button></div>
