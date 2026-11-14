@@ -55,9 +55,15 @@ N'importe quel serveur statique suffit :
 npx serve .
 ```
 
+## État des vérifications (14/11/2026)
+
+- Site en ligne, fichiers de l'app installable servis correctement (page, manifest, service worker, icônes).
+- Connexion réelle site → Supabase validée : profil, essai 72 h, repas, code entreprise et numéro de paiement enregistrés, aucune erreur.
+- Règles de sécurité testées : chaque téléphone ne voit que ses données ; un 2e essai gratuit est refusé.
+- Droits des photos : réglés.
+
 ## À faire avant le lancement public
 
 - Faire relire tous les conseils par une nutritionniste (fichier `js/content.js`).
 - Brancher le paiement Mobile Money (CinetPay, PayDunya ou FedaPay) à la fin de l'essai.
 - Enregistrer les audios en mooré, dioula et fulfuldé.
-- Remplacer la photo des élèves par une photo prise dans la région, et vérifier les droits des photos.
