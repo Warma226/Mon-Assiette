@@ -93,6 +93,7 @@ function computed() {
     trialOn, paid, paidPlan: paid ? S.plus.plan : null, paidUntil: paid ? new Date(paidUntil) : null,
     daysLeft: paid ? Math.max(1, Math.ceil((paidUntil - Date.now()) / 86400000)) : 0,
     payReady: U.payReady, payMode: U.payMode, paying: U.paying,
+    chariowLink: (plan) => (CONFIG.chariow || {})[plan] || null, licBusy: U.licBusy, licKey: U.licKey || '',
     hoursLeft: trialOn ? Math.max(1, Math.ceil((end - Date.now()) / 3600000)) : 0,
     trialUsed: !!(t && (t.cancelledAt || Date.now() >= end)),
     orgName: S.orgName || null,
@@ -406,6 +407,35 @@ const ACT = {
   },
   notifyMe() { const pm = payMethods().find((x) => x.id === U.pay) || payMethods()[0]; S.pay = { method: pm.id, phone: (pm.dial || '') + U.phone.replace(/\D/g, '') }; enqueue(S, { t: 'pay', method: S.pay.method, phone: S.pay.phone }); persist(); sync(); sfx.success(); toast("C'est noté ! On te prévient dès l'ouverture du paiement."); },
   payNow() { payNow(); },
+  payChariow() {
+    const link = (CONFIG.chariow || {})[U.offerPlan];
+    if (!link) { sfx.error(); toast('Cette formule arrive très bientôt. Choisis-en une autre pour l’instant.'); return; }
+    sfx.success(); U.showKey = true; render();
+    window.open(link, '_blank', 'noopener');
+    toast('Après le paiement, tu recevras ta clé : colle-la ici pour activer Plus.');
+  },
+  openKey() { U.showKey = true; go('offers'); setTimeout(() => document.querySelector('[data-input=licKey]')?.focus(), 400); },
+  toggleKey() { U.showKey = !U.showKey; sfx.tap(); render(); },
+  async activateKey() {
+    const key = (U.licKey || '').trim();
+    if (key.length < 6) { sfx.error(); toast('Colle la clé reçue après ton paiement.'); return; }
+    if (!navigator.onLine) { sfx.error(); toast('Connexion internet nécessaire pour activer ta clé.'); return; }
+    if (U.licBusy) return;
+    U.licBusy = true; render();
+    try {
+      await flush(S, api);
+      const r = await api.license({ key });
+      if (r.ok) {
+        S.plus = { plan: r.plan, until: r.until }; U.licKey = ''; U.showKey = false; persist();
+        go('home'); celebrate(true);
+        toast(r.already ? 'Cette clé est déjà active sur ce téléphone.' : 'Clé activée ! Mon Assiette Plus est actif jusqu’au ' + new Date(r.until).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) + '.');
+      } else {
+        sfx.error();
+        toast({ unknown_key: 'Clé introuvable. Vérifie qu’elle est bien copiée en entier.', used_elsewhere: 'Cette clé est déjà utilisée sur un autre téléphone.', expired: 'Cette clé a expiré.', revoked: 'Cette clé a été annulée.', too_many: 'Trop d’essais. Réessaie dans une heure.', not_configured: 'L’activation par clé arrive très bientôt.', activation_failed: 'Cette clé ne peut plus être activée.', unknown_product: 'Cette clé ne correspond pas à Mon Assiette Plus.' }[r.error] || 'Impossible d’activer la clé pour le moment. Réessaie.');
+      }
+    } catch (e) { sfx.error(); toast('Connexion instable. Réessaie dans un instant.'); }
+    U.licBusy = false; render();
+  },
   async invite() {
     sfx.tap();
     const text = 'Je sais enfin quoi manger, et pourquoi, avec Mon Assiette et Kalou. Essaie : ' + location.origin;
@@ -504,6 +534,7 @@ root.addEventListener('input', (e) => {
   else if (k === 'weight' || k === 'height') U.draft[k] = el.value;
   else if (k === 'chatDraft') U.chatDraft = el.value;
   else if (k === 'code') U.code = el.value.toUpperCase();
+  else if (k === 'licKey') U.licKey = el.value;
   else if (k === 'phone') {
     const len = (countryOf() || { len: 8 }).len || 8;
     el.value = el.value.replace(/[^\d ]/g, '').slice(0, len + 4); U.phone = el.value;
@@ -522,7 +553,7 @@ root.addEventListener('pointerup', (e) => {
   sfx.unlock(); spinWheel();
 });
 root.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.id === 'f-name') { e.preventDefault(); ACT.setupNext(); } });
-root.addEventListener('submit', (e) => { const f = e.target.dataset.form; if (!f) return; e.preventDefault(); if (f === 'chat') ask(U.chatDraft); if (f === 'code') redeem(); });
+root.addEventListener('submit', (e) => { const f = e.target.dataset.form; if (!f) return; e.preventDefault(); if (f === 'chat') ask(U.chatDraft); if (f === 'code') redeem(); if (f === 'lic') ACT.activateKey(); });
 window.addEventListener('online', () => sync());
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; if (U.screen === 'profile') render(); });
 window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (S.onboarded && S.profile.assessedAt && VIEWS[h] && !['onb', 'setup'].includes(h) && h !== U.screen) go(h); });

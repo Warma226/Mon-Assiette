@@ -476,9 +476,10 @@ export function profile(S, U, C) {
     <div class="card fu d3 stack ${C.isPlus ? 'dark' : ''}">
       <small class="kicker">ABONNEMENT</small>
       <b class="h3">${C.paid ? (PLAN_NAMES[C.paidPlan] || 'Mon Assiette Plus') + ' · actif' : C.trialOn ? PLAN_NAMES[S.trial.plan] + ' · essai gratuit' : C.orgName ? 'Accès offert par ' + esc(C.orgName) : 'Formule gratuite'}</b>
-      <small>${C.paid ? `Encore ${C.daysLeft} jour${C.daysLeft > 1 ? 's' : ''}, jusqu’au ${C.paidUntil.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: C.paidUntil.getFullYear() !== C.now.getFullYear() ? 'numeric' : undefined })}.` : C.trialOn ? `Il te reste ${C.hoursLeft} h d'essai. Aucun paiement pendant l'essai.` : C.trialUsed ? (C.payReady ? 'Ton essai est terminé. Continue avec Plus en payant par Mobile Money.' : 'Ton essai est terminé. Le paiement Mobile Money arrive bientôt.') : 'Bilan, plan du jour, défis et suivi sont gratuits.'}</small>
+      <small>${C.paid ? `Encore ${C.daysLeft} jour${C.daysLeft > 1 ? 's' : ''}, jusqu’au ${C.paidUntil.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: C.paidUntil.getFullYear() !== C.now.getFullYear() ? 'numeric' : undefined })}.` : C.trialOn ? `Il te reste ${C.hoursLeft} h d'essai. Aucun paiement pendant l'essai.` : C.trialUsed ? 'Ton essai est terminé. Continue avec Plus en payant par Mobile Money.' : 'Bilan, plan du jour, défis et suivi sont gratuits.'}</small>
       ${C.paid ? `<button class="btn-light tap" data-act="go" data-arg="offers">Prolonger</button>` : C.trialOn ? `<div class="thin-bar light"><div style="width:${Math.round(C.hoursLeft / 72 * 100)}%"></div></div><div class="row"><button class="btn-light tap" data-act="go" data-arg="offers">Changer de formule</button><button class="btn-ghost tap" data-act="cancelTrial">Arrêter l'essai</button></div>`
       : `<button class="btn-dark tap" data-act="go" data-arg="offers">${C.trialUsed ? 'Voir les offres' : 'Essayer Plus 72 h gratuit'}</button>`}
+      ${!C.paid ? `<button class="link sm" data-act="openKey">J’ai une clé Plus</button>` : ''}
     </div>
     <div class="fu d4 stack"><h2 class="sec-title">Rappels au moment idéal</h2>
       <div class="card list">${toggles.map((t) => `<button class="li tap" data-act="toggleNotif" data-arg="${t[0]}" role="switch" aria-checked="${!!p.notif[t[0]]}"><span class="grow"><b>${t[1]}</b><small>${t[2]}</small></span><span class="switch ${p.notif[t[0]] ? 'on' : ''}"><i></i></span></button>`).join('')}</div>
@@ -512,9 +513,17 @@ export function offers(S, U, C) {
   const phoneOk = !payment.phone || digits.length === len;
   const canTrial = !C.paid && (!C.trialUsed || C.trialOn);
   const until = C.paidUntil ? C.paidUntil.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
-  const tag = C.paid ? 'PLUS ACTIF' : canTrial ? 'ESSAI GRATUIT' : C.payReady ? 'PAIEMENT MOBILE MONEY' : 'BIENTÔT';
-  const big = C.paid ? 'Merci pour ton soutien !' : canTrial ? '72 heures offertes' : C.payReady ? 'Continue avec Plus' : 'Paiement Mobile Money';
-  const small = C.paid ? `Plus est actif jusqu’au ${until}.` : canTrial ? "Rien à payer aujourd'hui. Tu arrêtes en un clic." : C.payReady ? 'Paie en 1 minute avec Orange Money, Moov, MTN, Wave ou ta carte.' : 'Ton essai est terminé. Laisse ton numéro : on te prévient dès l’ouverture.';
+  const tag = C.paid ? 'PLUS ACTIF' : canTrial ? 'ESSAI GRATUIT' : 'PAIEMENT MOBILE MONEY';
+  const big = C.paid ? 'Merci pour ton soutien !' : canTrial ? '72 heures offertes' : 'Continue avec Plus';
+  const small = C.paid ? `Plus est actif jusqu’au ${until}.` : canTrial ? "Rien à payer aujourd'hui. Tu arrêtes en un clic." : 'Paie en 1 minute par Mobile Money, puis active ta clé ici.';
+  const link = C.chariowLink(chosen.id);
+  const chariowBtn = (label) => cta(label, 'payChariow', { pulse: !canTrial, icon: 'check', sub: link ? 'Orange Money, Moov, Wave… · paiement sécurisé Chariow' : 'Cette formule arrive très bientôt', disabled: !link, id: 'pay-cta' });
+  const keyBox = `<div class="card stack key-box ${U.showKey ? 'open' : ''}">
+      <button class="link-row" data-act="toggleKey">${img3d('sparkles', 22)} Tu as déjà payé ? Active ta clé<span>${U.showKey ? '˄' : '›'}</span></button>
+      ${U.showKey ? `<form class="stack" data-form="lic"><small class="muted">Colle la clé reçue après ton paiement (par e-mail ou sur la page de confirmation).</small>
+        <input class="field" type="text" value="${esc(C.licKey)}" placeholder="Ex. MA-XXXX-XXXX-XXXX" data-input="licKey" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="120">
+        <button type="submit" class="btn-dark tap" ${C.licBusy ? 'disabled' : ''}>${C.licBusy ? 'Vérification…' : 'Activer ma clé'}</button></form>` : ''}
+    </div>`;
   const payBtn = (label) => cta(C.paying ? 'Ouverture du paiement…' : label, 'payNow', { pulse: !canTrial, icon: 'check', sub: 'Paiement sécurisé PayDunya · Mobile Money ou carte', disabled: C.paying, id: 'pay-cta' });
   return `<section class="page">
     ${header('Mon Assiette <span class="green">Plus</span>')}
@@ -536,11 +545,11 @@ export function offers(S, U, C) {
       : '<small class="muted">La carte sera demandée de façon sécurisée, seulement si tu continues après l’essai.</small>'}
     </div>
     <div class="fu d6 stack">
-      ${C.paid ? (C.payReady ? payBtn('Prolonger : payer ' + chosen.price) : '')
+      ${C.paid ? chariowBtn('Prolonger : payer ' + chosen.price)
       : canTrial ? cta(C.trialOn ? 'Passer à la formule ' + chosen.name : "Commencer l'essai gratuit", 'startTrial', { pulse: true, sub: 'puis ' + chosen.price + ' ' + chosen.per + ' · sans engagement', disabled: !phoneOk, id: 'trial-cta' })
-        + (C.payReady ? `<button class="link center" data-act="payNow">${C.trialOn ? 'Payer ' + chosen.price + ' maintenant et garder Plus' : 'Ou payer ' + chosen.price + ' tout de suite'}</button>` : '')
-      : C.payReady ? payBtn('Payer ' + chosen.price + ' · formule ' + chosen.name)
-      : cta('Me prévenir', 'notifyMe', { disabled: !phoneOk, id: 'trial-cta' })}
+        + `<button class="link center" data-act="payChariow">${C.trialOn ? 'Payer ' + chosen.price + ' maintenant et garder Plus' : 'Ou payer ' + chosen.price + ' tout de suite'}</button>`
+      : chariowBtn('Payer ' + chosen.price + ' · formule ' + chosen.name)}
+      ${keyBox}
       <div class="card stack">
         <button class="link-row" data-act="toggleCode">Code entreprise ou mutuelle ?<span>${U.showCode ? '˄' : '›'}</span></button>
         ${U.showCode ? `<form class="row" data-form="code"><label for="org-code" class="sr">Code</label><input id="org-code" class="field sm" type="text" value="${esc(U.code)}" placeholder="Ex. DEMO2026" data-input="code" autocapitalize="characters" maxlength="30"><button type="submit" class="btn-dark tap">Valider</button></form>` : ''}

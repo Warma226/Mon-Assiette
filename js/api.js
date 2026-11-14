@@ -65,6 +65,14 @@ export function makeApi(deviceId) {
         body: JSON.stringify(body)
       }).then(async (r) => Object.assign({ httpStatus: r.status }, await r.json().catch(() => ({}))));
     },
+    // Activation d'une clé de licence Chariow (fonction serveur ma-license)
+    license(body) {
+      return fetch(CONFIG.supabaseUrl + '/functions/v1/ma-license', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', apikey: CONFIG.supabaseKey, 'x-device-id': deviceId },
+        body: JSON.stringify(body)
+      }).then(async (r) => Object.assign({ httpStatus: r.status }, await r.json().catch(() => ({}))));
+    },
     getProfile() {
       return request(deviceId, `ma_profiles?device_id=eq.${encodeURIComponent(deviceId)}&select=*`).then((r) => (r && r[0]) || null);
     },
