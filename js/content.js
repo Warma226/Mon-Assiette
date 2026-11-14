@@ -232,8 +232,8 @@ export const CHAT_CHIPS = ['Pourquoi ce menu pour moi ?', 'Que manger le soir ?'
 // Prix calés sur les frais des agrégateurs Mobile Money (pourcentage seul, sans frais fixe) :
 // la formule à la semaine coûte le plus en frais (4 paiements par mois), on pousse donc le mois et l'année.
 export const PLANS = [
-  { id: 'semaine', name: 'Semaine', desc: 'Pour essayer à petit prix', price: '350 F', per: 'CFA / semaine', popular: false },
-  { id: 'mois', name: 'Mois', desc: '34 % moins cher que la semaine', price: '1 000 F', per: 'CFA / mois', popular: true },
+  { id: 'semaine', name: 'Semaine', desc: 'Pour essayer à petit prix', price: '650 F', per: 'CFA / semaine', popular: false },
+  { id: 'mois', name: 'Mois', desc: '64 % moins cher que la semaine', price: '1 000 F', per: 'CFA / mois', popular: true },
   { id: 'trimestre', name: '3 mois', desc: '833 F par mois, pour suivre un vrai programme', price: '2 500 F', per: 'CFA / 3 mois', popular: false },
   { id: 'annee', name: 'Année', desc: '3 mois offerts : 750 F par mois', price: '9 000 F', per: 'CFA / an', popular: false, best: true }
 ];

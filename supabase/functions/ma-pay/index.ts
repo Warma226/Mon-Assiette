@@ -13,7 +13,7 @@ const API = MODE === 'live' ? 'https://app.paydunya.com/api/v1' : 'https://app.p
 const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
 
 const PLANS: Record<string, { amount: number; label: string }> = {
-  semaine: { amount: 350, label: 'Mon Assiette Plus · 1 semaine' },
+  semaine: { amount: 650, label: 'Mon Assiette Plus · 1 semaine' },
   mois: { amount: 1000, label: 'Mon Assiette Plus · 1 mois' },
   trimestre: { amount: 2500, label: 'Mon Assiette Plus · 3 mois' },
   annee: { amount: 9000, label: 'Mon Assiette Plus · 1 an' }
