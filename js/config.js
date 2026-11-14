@@ -7,7 +7,7 @@ export const CONFIG = {
   // Pages de paiement Chariow (une par formule). Laisser null tant que le produit n'est pas publié.
   chariow: {
     semaine: 'https://otbbljjy.mychariow.shop/prd_oirgyxlr/checkout',
-    mois: null,
+    mois: 'https://otbbljjy.mychariow.shop/prd_w3fidn6g',
     trimestre: null,
     annee: null
   },
