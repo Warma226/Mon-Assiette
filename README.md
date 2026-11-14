@@ -78,3 +78,10 @@ Ils s'affichent automatiquement. En leur absence, l'app montre une pastille aux 
 - Chaque audio est gardé (bucket privé `ma-tts`) et réutilisé pour tout le monde : un conseil ou une recette n'est fabriqué qu'une fois.
 - Plafonds : 450 000 caractères par mois au total (l'offre gratuite en donne 500 000), 60 nouvelles synthèses par téléphone et par jour.
 - Secrets à renseigner dans Supabase : `AZURE_SPEECH_KEY` et `AZURE_SPEECH_REGION`. Sans eux, l'app utilise la voix du téléphone.
+
+## Paiement (PayDunya)
+
+- Fonction serveur `supabase/functions/ma-pay` : crée la facture PayDunya (prix fixés côté serveur : 350 / 1 000 / 2 500 / 9 000 F), reçoit la notification de paiement (IPN, vérifiée par le hash SHA-512 de la clé principale), puis revérifie le paiement directement chez PayDunya avant d'activer Plus.
+- Table `ma_payments` (lecture seule pour l'appareil concerné) et fonction `ma_apply_payment` : un paiement n'est appliqué qu'une fois, les jours s'ajoutent à l'abonnement en cours.
+- Dans l'app : bouton « Payer », redirection vers la page PayDunya (Orange Money, Moov, MTN, Wave, carte selon le pays), retour automatique et activation.
+- Secrets à renseigner dans Supabase : `PAYDUNYA_MASTER_KEY`, `PAYDUNYA_PRIVATE_KEY`, `PAYDUNYA_TOKEN`, et `PAYDUNYA_MODE` (`test` par défaut, `live` pour les vrais paiements).

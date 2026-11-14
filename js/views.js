@@ -475,9 +475,9 @@ export function profile(S, U, C) {
     </div>
     <div class="card fu d3 stack ${C.isPlus ? 'dark' : ''}">
       <small class="kicker">ABONNEMENT</small>
-      <b class="h3">${C.isPlus ? PLAN_NAMES[S.trial.plan] + ' · essai gratuit' : C.orgName ? 'Accès offert par ' + esc(C.orgName) : 'Formule gratuite'}</b>
-      <small>${C.isPlus ? `Il te reste ${C.hoursLeft} h d'essai. Aucun paiement pendant l'essai.` : C.trialUsed ? 'Ton essai est terminé. Le paiement Mobile Money arrive bientôt.' : 'Bilan, plan du jour, défis et suivi sont gratuits.'}</small>
-      ${C.isPlus ? `<div class="thin-bar light"><div style="width:${Math.round(C.hoursLeft / 72 * 100)}%"></div></div><div class="row"><button class="btn-light tap" data-act="go" data-arg="offers">Changer de formule</button><button class="btn-ghost tap" data-act="cancelTrial">Arrêter l'essai</button></div>`
+      <b class="h3">${C.paid ? (PLAN_NAMES[C.paidPlan] || 'Mon Assiette Plus') + ' · actif' : C.trialOn ? PLAN_NAMES[S.trial.plan] + ' · essai gratuit' : C.orgName ? 'Accès offert par ' + esc(C.orgName) : 'Formule gratuite'}</b>
+      <small>${C.paid ? `Encore ${C.daysLeft} jour${C.daysLeft > 1 ? 's' : ''}, jusqu’au ${C.paidUntil.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: C.paidUntil.getFullYear() !== C.now.getFullYear() ? 'numeric' : undefined })}.` : C.trialOn ? `Il te reste ${C.hoursLeft} h d'essai. Aucun paiement pendant l'essai.` : C.trialUsed ? (C.payReady ? 'Ton essai est terminé. Continue avec Plus en payant par Mobile Money.' : 'Ton essai est terminé. Le paiement Mobile Money arrive bientôt.') : 'Bilan, plan du jour, défis et suivi sont gratuits.'}</small>
+      ${C.paid ? `<button class="btn-light tap" data-act="go" data-arg="offers">Prolonger</button>` : C.trialOn ? `<div class="thin-bar light"><div style="width:${Math.round(C.hoursLeft / 72 * 100)}%"></div></div><div class="row"><button class="btn-light tap" data-act="go" data-arg="offers">Changer de formule</button><button class="btn-ghost tap" data-act="cancelTrial">Arrêter l'essai</button></div>`
       : `<button class="btn-dark tap" data-act="go" data-arg="offers">${C.trialUsed ? 'Voir les offres' : 'Essayer Plus 72 h gratuit'}</button>`}
     </div>
     <div class="fu d4 stack"><h2 class="sec-title">Rappels au moment idéal</h2>
@@ -510,12 +510,19 @@ export function offers(S, U, C) {
   const digits = (U.phone || '').replace(/\D/g, '');
   const len = payment.len || 8;
   const phoneOk = !payment.phone || digits.length === len;
-  const canTrial = !C.trialUsed || C.isPlus;
+  const canTrial = !C.paid && (!C.trialUsed || C.trialOn);
+  const until = C.paidUntil ? C.paidUntil.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+  const tag = C.paid ? 'PLUS ACTIF' : canTrial ? 'ESSAI GRATUIT' : C.payReady ? 'PAIEMENT MOBILE MONEY' : 'BIENTÔT';
+  const big = C.paid ? 'Merci pour ton soutien !' : canTrial ? '72 heures offertes' : C.payReady ? 'Continue avec Plus' : 'Paiement Mobile Money';
+  const small = C.paid ? `Plus est actif jusqu’au ${until}.` : canTrial ? "Rien à payer aujourd'hui. Tu arrêtes en un clic." : C.payReady ? 'Paie en 1 minute avec Orange Money, Moov, MTN, Wave ou ta carte.' : 'Ton essai est terminé. Laisse ton numéro : on te prévient dès l’ouverture.';
+  const payBtn = (label) => cta(C.paying ? 'Ouverture du paiement…' : label, 'payNow', { pulse: !canTrial, icon: 'check', sub: 'Paiement sécurisé PayDunya · Mobile Money ou carte', disabled: C.paying, id: 'pay-cta' });
   return `<section class="page">
     ${header('Mon Assiette <span class="green">Plus</span>')}
     <div class="promo hero fu d2"><div class="promo-kalou">${kalou('bravo', 108)}</div>
-      <span><small class="tag">${canTrial ? 'ESSAI GRATUIT' : 'BIENTÔT'}</small><b>${canTrial ? '72 heures offertes' : 'Paiement Mobile Money'}</b><em>${canTrial ? "Rien à payer aujourd'hui. Tu arrêtes en un clic." : 'Ton essai est terminé. Laisse ton numéro : on te prévient dès l’ouverture.'}</em></span></div>
-    ${C.isPlus ? `<div class="card dark stack popnow"><b class="h3">Ton essai ${PLAN_NAMES[S.trial.plan]} est actif</b><small>Il te reste ${C.hoursLeft} h.</small><button class="btn-ghost tap" data-act="cancelTrial">Arrêter l'essai</button></div>` : ''}
+      <span><small class="tag">${tag}</small><b>${big}</b><em>${small}</em></span></div>
+    ${C.paid ? `<div class="card dark stack popnow"><b class="h3">${PLAN_NAMES[C.paidPlan] || 'Mon Assiette Plus'} · actif</b><small>Encore ${C.daysLeft} jour${C.daysLeft > 1 ? 's' : ''}, jusqu’au ${until}. Tu peux prolonger à tout moment : les jours s’ajoutent.</small></div>`
+      : C.trialOn ? `<div class="card dark stack popnow"><b class="h3">Ton essai ${PLAN_NAMES[S.trial.plan]} est actif</b><small>Il te reste ${C.hoursLeft} h.</small><button class="btn-ghost tap" data-act="cancelTrial">Arrêter l'essai</button></div>` : ''}
+    ${C.payMode === 'test' && C.payReady ? '<div class="note warn">Paiement en mode test : aucun argent réel n’est prélevé.</div>' : ''}
     <div class="fu d3 stack">${PLANS.map((p) => `<button class="plan tap ${p.id === chosen.id ? 'on' : ''}" data-act="pickPlan" data-arg="${p.id}" aria-pressed="${p.id === chosen.id}"><span class="radio"><i></i></span><span class="grow"><b>${p.name}</b><small>${p.desc}</small></span><span class="price"><b>${p.price}</b><small>${p.per}</small></span>${p.popular ? '<span class="ribbon">Le plus choisi</span>' : p.best ? '<span class="ribbon gold">Meilleur prix</span>' : ''}</button>`).join('')}</div>
     <div class="card fu d4 feat"><div class="feat-row head"><span>Ce qui est inclus</span><span>Gratuit</span><span class="green">Plus</span></div>
       ${FEATURES.map((f) => `<div class="feat-row"><span>${f[0]}</span><span class="${f[1] === '—' ? 'no' : 'yes'}">${f[1]}</span><span class="yes b">${f[2]}</span></div>`).join('')}</div>
@@ -529,7 +536,10 @@ export function offers(S, U, C) {
       : '<small class="muted">La carte sera demandée de façon sécurisée, seulement si tu continues après l’essai.</small>'}
     </div>
     <div class="fu d6 stack">
-      ${canTrial ? cta(C.isPlus ? 'Passer à la formule ' + chosen.name : "Commencer l'essai gratuit", 'startTrial', { pulse: true, sub: 'puis ' + chosen.price + ' ' + chosen.per + ' · sans engagement', disabled: !phoneOk, id: 'trial-cta' })
+      ${C.paid ? (C.payReady ? payBtn('Prolonger : payer ' + chosen.price) : '')
+      : canTrial ? cta(C.trialOn ? 'Passer à la formule ' + chosen.name : "Commencer l'essai gratuit", 'startTrial', { pulse: true, sub: 'puis ' + chosen.price + ' ' + chosen.per + ' · sans engagement', disabled: !phoneOk, id: 'trial-cta' })
+        + (C.payReady ? `<button class="link center" data-act="payNow">${C.trialOn ? 'Payer ' + chosen.price + ' maintenant et garder Plus' : 'Ou payer ' + chosen.price + ' tout de suite'}</button>` : '')
+      : C.payReady ? payBtn('Payer ' + chosen.price + ' · formule ' + chosen.name)
       : cta('Me prévenir', 'notifyMe', { disabled: !phoneOk, id: 'trial-cta' })}
       <div class="card stack">
         <button class="link-row" data-act="toggleCode">Code entreprise ou mutuelle ?<span>${U.showCode ? '˄' : '›'}</span></button>

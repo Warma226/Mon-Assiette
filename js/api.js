@@ -57,6 +57,14 @@ export function makeApi(deviceId) {
         country: ['bf', 'ci', 'sn', 'ml', 'bj', 'tg', 'ne', 'gn', 'autre0', 'autre1'].includes(p.country) ? p.country : null
       }], 'device_id');
     },
+    // Paiement PayDunya (fonction serveur ma-pay)
+    pay(body) {
+      return fetch(CONFIG.supabaseUrl + '/functions/v1/ma-pay', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', apikey: CONFIG.supabaseKey, 'x-device-id': deviceId },
+        body: JSON.stringify(body)
+      }).then(async (r) => Object.assign({ httpStatus: r.status }, await r.json().catch(() => ({}))));
+    },
     getProfile() {
       return request(deviceId, `ma_profiles?device_id=eq.${encodeURIComponent(deviceId)}&select=*`).then((r) => (r && r[0]) || null);
     },

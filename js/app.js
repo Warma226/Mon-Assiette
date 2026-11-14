@@ -75,7 +75,10 @@ function computed() {
   const A = analysis();
   const t = S.trial;
   const end = t ? new Date(t.startedAt).getTime() + CONFIG.trialHours * 3600000 : 0;
-  const isPlus = !!(t && !t.cancelledAt && Date.now() < end);
+  const trialOn = !!(t && !t.cancelledAt && Date.now() < end);
+  const paidUntil = S.plus && S.plus.until ? new Date(S.plus.until).getTime() : 0;
+  const paid = paidUntil > Date.now();
+  const isPlus = trialOn || paid;
   const dayCache = {};
   const day = (off) => {
     if (dayCache[off]) return dayCache[off];
@@ -87,7 +90,10 @@ function computed() {
     wheel: (slot, maxMin) => wheelItems(slot, S.profile, A, dateAt(0), maxMin),
     wheelLeft: (slot) => 4 - (S.wheelUse[dayKey(now()) + ':' + slot] || 0),
     untilMidnight: untilMidnight(),
-    hoursLeft: isPlus ? Math.max(1, Math.ceil((end - Date.now()) / 3600000)) : 0,
+    trialOn, paid, paidPlan: paid ? S.plus.plan : null, paidUntil: paid ? new Date(paidUntil) : null,
+    daysLeft: paid ? Math.max(1, Math.ceil((paidUntil - Date.now()) / 86400000)) : 0,
+    payReady: U.payReady, payMode: U.payMode, paying: U.paying,
+    hoursLeft: trialOn ? Math.max(1, Math.ceil((end - Date.now()) / 3600000)) : 0,
     trialUsed: !!(t && (t.cancelledAt || Date.now() >= end)),
     orgName: S.orgName || null,
     canInstall: !!installEvt,
@@ -399,6 +405,7 @@ const ACT = {
     persist(); render(); toast('Essai arrêté. Tu ne paieras rien.');
   },
   notifyMe() { const pm = payMethods().find((x) => x.id === U.pay) || payMethods()[0]; S.pay = { method: pm.id, phone: (pm.dial || '') + U.phone.replace(/\D/g, '') }; enqueue(S, { t: 'pay', method: S.pay.method, phone: S.pay.phone }); persist(); sync(); sfx.success(); toast("C'est noté ! On te prévient dès l'ouverture du paiement."); },
+  payNow() { payNow(); },
   async invite() {
     sfx.tap();
     const text = 'Je sais enfin quoi manger, et pourquoi, avec Mon Assiette et Kalou. Essaie : ' + location.origin;
@@ -542,14 +549,61 @@ function reminders() {
 }
 setInterval(reminders, 30000);
 
+/* ---------- Paiement PayDunya ---------- */
+async function payCheck() {
+  if (!navigator.onLine) return;
+  try {
+    const ping = await api.pay({ action: 'ping' });
+    U.payReady = !!ping.configured; U.payMode = ping.mode || null;
+  } catch (e) { U.payReady = false; }
+  // Abonnement payé enregistré sur le serveur (utile après un changement de téléphone ou un paiement terminé ailleurs)
+  try {
+    const p = await api.getProfile();
+    if (p && p.plus_until) { S.plus = { plan: p.plus_plan, until: p.plus_until }; persist(); }
+  } catch (e) { /* hors ligne */ }
+  const pend = S.pendingPay;
+  if (pend && U.payReady) {
+    try {
+      const r = await api.pay({ action: 'status', token: pend.token });
+      if (r.ok && r.status === 'completed') {
+        S.plus = { plan: r.plan, until: r.until }; S.pendingPay = null; persist();
+        go('home'); celebrate(true); toast('Paiement reçu ! Mon Assiette Plus est actif jusqu’au ' + new Date(r.until).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) + '.');
+      } else if (r.ok && (r.status === 'cancelled' || r.status === 'failed')) {
+        S.pendingPay = null; persist(); sfx.error(); toast(r.status === 'cancelled' ? 'Paiement annulé. Tu n’as rien payé.' : 'Le paiement n’a pas abouti. Tu n’as rien payé.');
+      } else if (Date.now() - pend.at > 86400000) { S.pendingPay = null; persist(); }
+      else toast('Paiement en cours de confirmation…');
+    } catch (e) { /* on réessaiera au prochain lancement */ }
+  }
+  if (/[?&]pay=cancel/.test(location.search) && !pend) toast('Paiement annulé. Tu n’as rien payé.');
+  if (location.search) history.replaceState(null, '', location.pathname + location.hash);
+  render();
+}
+async function payNow() {
+  if (U.paying) return;
+  if (!navigator.onLine) { sfx.error(); toast('Connexion internet nécessaire pour payer.'); return; }
+  U.paying = true; render();
+  try {
+    await flush(S, api);
+    const r = await api.pay({ action: 'create', plan: U.offerPlan });
+    if (r.ok && r.url) {
+      S.pendingPay = { token: r.token, plan: U.offerPlan, at: Date.now() }; persist();
+      sfx.success(); location.href = r.url; return;
+    }
+    sfx.error(); toast(r.error === 'too_many' ? 'Trop de tentatives. Réessaie dans une heure.' : r.error === 'not_configured' ? 'Le paiement arrive très bientôt.' : 'Impossible de lancer le paiement. Réessaie.');
+  } catch (e) { sfx.error(); toast('Connexion instable. Réessaie dans un instant.'); }
+  U.paying = false; render();
+}
+
 /* ---------- Démarrage ---------- */
 if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 const h0 = location.hash.slice(1);
 if (S.onboarded && S.profile.assessedAt && VIEWS[h0] && !['onb', 'setup'].includes(h0)) U.screen = h0;
 render(false);
 sync();
+payCheck();
 setInterval(() => { if (TAB_SCREENS.includes(U.screen) && !U.wheel.spinning) render(); }, 60000);
 setInterval(() => { const el = document.getElementById('wheel-count'); if (el) { const t = untilMidnight(); el.textContent = t; if (t === '00:00:00' || t.startsWith('23:59:5')) render(); } }, 1000);
 if (S.trial && !S.trial.cancelledAt && navigator.onLine) {
   api.getProfile().then((p) => { if (p && p.trial_started_at) { S.trial = { plan: p.trial_plan, startedAt: p.trial_started_at, cancelledAt: p.trial_cancelled_at }; persist(); render(); } }).catch(() => {});
+
 }
