@@ -1,7 +1,8 @@
 // Moteur nutritionnel : bilan du profil, priorités, plan de repas personnalisé et expliqué.
 // Les règles suivent les recommandations générales (OMS, FAO) et ne remplacent pas un avis médical.
 
-import { MEALS, SLOT_ORDER, TAG_REASON, HABITS, ALLERGENS, BUDGETS, MISSIONS, TIPS, DAY_THEMES } from './content.js';
+import { MEALS, SLOT_ORDER, TAG_REASON, HABITS, ALLERGENS, BUDGETS, MISSIONS, TIPS, DAY_THEMES, DETAILS, COUNTRIES } from './content.js';
+import { now } from './time.js';
 
 export const PRIORITIES = {
   fer_folates: { title: 'Fer et folates', icon: 'herb', why: 'Enceinte, ton corps fabrique plus de sang et bébé construit son système nerveux. Les feuilles vertes, le haricot et le poisson t’aident.', w: { iron: 3, folate: 3, vitc: 1, protein: 1 } },
@@ -27,7 +28,7 @@ export const PRIORITIES = {
 
 export const DEFAULT_PROFILE = {
   name: '', sex: null, age: null, activity: 'moyenne', weight: null, height: null,
-  goal: 'equilibre', conditions: [], pregnancy: 'non', allergies: [], diet: 'tout',
+  goal: 'equilibre', conditions: [], pregnancy: 'non', allergies: [], diet: 'tout', country: null, answered: {},
   habits: { breakfast: 'souvent', veggies: 'parfois', fruits: 'parfois', sugary: 'parfois', cube: 'un', appetite: 'bon', water: '1_2' },
   budget: 2000, lang: 'Français',
   notif: { meals: true, water: true, tips: false }, assessedAt: null
@@ -149,7 +150,24 @@ export function allowed(meal, p) {
   if ((p.pregnancy === 'enceinte' || p.pregnancy === 'allaite') && meal.tags.includes('herbal')) return false;
   if ((p.conditions || []).includes('estomac') && meal.id === 'gingembre') return false;
   if (p.diet === 'vegetarien' && (meal.tags.includes('meat') || meal.tags.includes('fish') || meal.al.includes('crustaces'))) return false;
+  if (!fromHere(meal, p)) return false;
   return true;
+}
+
+/* ---------- Pays : plats d'ici, nom local, petite fiche ---------- */
+const realCountry = (p) => !!(p.country && COUNTRIES.some((c) => c.id === p.country && !c.id.startsWith('autre')));
+// Plat courant dans le pays de la personne (les plats sans pays sont courants partout)
+function fromHere(meal, p) {
+  const c = (DETAILS[meal.id] || {}).c;
+  return !c || !realCountry(p) || c.includes(p.country);
+}
+export function isLocal(meal, p) { const c = (DETAILS[meal.id] || {}).c; return !!(c && realCountry(p) && c.includes(p.country)); }
+// Les plats signature du pays (courants dans 1 ou 2 pays) passent devant les plats régionaux
+function localBonus(meal, p) { if (!isLocal(meal, p)) return 0; return DETAILS[meal.id].c.length <= 2 ? 3 : 1.5; }
+export function localize(meal, p) {
+  const D = DETAILS[meal.id] || {};
+  const local = (D.local && p.country && D.local[p.country]) || null;
+  return Object.assign({}, meal, { name: local || meal.name, baseName: meal.name, desc: D.d || '', min: D.min || null, local: isLocal(meal, p) });
 }
 
 function scoreMeal(meal, weights) {
@@ -164,24 +182,26 @@ export function candidates(slot, p, A, date) {
   let list = MEALS.filter((m) => m.slot === slot && allowed(m, p));
   const inBudget = list.filter((m) => m.cost <= tier);
   if (inBudget.length) list = inBudget;
-  return list.map((m) => ({ m, s: scoreMeal(m, W) })).sort((a, b) => b.s - a.s || a.m.cost - b.m.cost || a.m.id.localeCompare(b.m.id));
+  return list.map((m) => ({ m, s: scoreMeal(m, W) + localBonus(m, p) })).sort((a, b) => b.s - a.s || a.m.cost - b.m.cost || a.m.id.localeCompare(b.m.id));
 }
 
 const dayNum = (d) => Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
 
 // Plan d'une journée : choix déterministe parmi les meilleurs plats, avec variété d'un jour à l'autre
-export function planDay(date, p, A, swaps = {}, key = '') {
+export function planDay(date, p, A, swaps = {}, key = '', picks = {}) {
   const n = dayNum(date);
   return SLOT_ORDER.map((slot, si) => {
     const list = candidates(slot, p, A, date);
     if (!list.length) return { slot, key: slot, empty: true, name: 'Repas libre', portion: 'Aucun plat du catalogue ne convient à tes allergies : demande conseil à Kalou.', reasons: [], icon: 'thinking-face', ing: [] };
-    const k = Math.min(slot === 'collation' || slot === 'dessert' || slot === 'bienetre' ? 5 : 4, list.length);
+    const picked = picks[key + ':' + slot] && list.find((x) => x.m.id === picks[key + ':' + slot]);
+    if (picked) return Object.assign({ key: slot, reasons: explain(picked.m, p, A), themeHit: themeHit(picked.m, date), picked: true }, localize(picked.m, p), { alternatives: list.length });
+    const k = Math.min(slot === 'collation' || slot === 'dessert' || slot === 'bienetre' ? 6 : 5, list.length);
     const swap = swaps[key + ':' + slot] || 0;
     const prevIdx = (n - 1 + si * 3) % k;
     let idx = (n + si * 3 + swap) % k;
     if (idx === prevIdx && k > 1 && !swap) idx = (idx + 1) % k;
     const { m } = list[idx];
-    return Object.assign({ key: slot, reasons: explain(m, p, A), themeHit: themeHit(m, date) }, m, { alternatives: list.length });
+    return Object.assign({ key: slot, reasons: explain(m, p, A), themeHit: themeHit(m, date) }, localize(m, p), { alternatives: list.length });
   });
 }
 
@@ -226,7 +246,7 @@ export function shopping(days) {
 }
 
 /* ---------- « Que manger maintenant ? » ---------- */
-export function slotNow(date = new Date()) {
+export function slotNow(date = now()) {
   const h = date.getHours() + date.getMinutes() / 60;
   if (h < 9.5) return 'matin';
   if (h < 11.5) return 'collation';
@@ -262,5 +282,22 @@ export function cookWith(have, p, A) {
   }).filter((x) => x.coverage >= 0.5)
     .sort((a, b) => a.missing.length - b.missing.length || b.s - a.s)
     .slice(0, 6)
-    .map((x) => Object.assign({ missing: x.missing, reasons: explain(x.m, p, A) }, x.m));
+    .map((x) => Object.assign({ missing: x.missing, reasons: explain(x.m, p, A) }, localize(x.m, p)));
+}
+
+/* ---------- La roue : que préparer ? ---------- */
+// Plats sûrs pour le profil, du pays, dans le temps disponible. Chaque case a une taille
+// proportionnelle à l'intérêt du plat pour le bilan : le hasard penche vers ce qui fait du bien.
+export function wheelItems(slot, p, A, date, maxMin) {
+  const all = candidates(slot, p, A, date);
+  let list = all.filter((x) => !maxMin || (DETAILS[x.m.id] || {}).min <= maxMin);
+  let relaxed = false;
+  if (list.length < 3) { relaxed = list.length < all.length; list = all.slice().sort((a, b) => ((DETAILS[a.m.id] || {}).min || 0) - ((DETAILS[b.m.id] || {}).min || 0)).slice(0, Math.min(3, all.length)).sort((a, b) => b.s - a.s); }
+  list = list.slice(0, 8);
+  if (!list.length) return { items: [], relaxed };
+  const lo = Math.min(...list.map((x) => x.s)), hi = Math.max(...list.map((x) => x.s));
+  const items = list.map((x) => Object.assign({ weight: hi === lo ? 1 : 1 + 2 * (x.s - lo) / (hi - lo), reasons: explain(x.m, p, A) }, localize(x.m, p)));
+  const total = items.reduce((t, x) => t + x.weight, 0);
+  items.forEach((x) => { x.share = x.weight / total; });
+  return { items, relaxed };
 }

@@ -141,3 +141,8 @@ grant execute on function public.ma_device_id() to anon, authenticated;
 grant select, insert, update, delete on public.ma_profiles, public.ma_meal_logs, public.ma_water_logs, public.ma_improvements, public.ma_questions to anon, authenticated;
 
 insert into public.ma_org_codes (code, org_name, max_uses) values ('DEMO2026', 'Démo Mon Assiette', 100) on conflict (code) do nothing;
+
+-- v3 : pays de résidence (menu local et fuseau horaire)
+alter table public.ma_profiles add column if not exists country text;
+alter table public.ma_profiles drop constraint if exists ma_profiles_country_check;
+alter table public.ma_profiles add constraint ma_profiles_country_check check (country is null or country in ('bf','ci','sn','ml','bj','tg','ne','gn','autre0','autre1'));

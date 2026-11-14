@@ -1,5 +1,5 @@
 // Service worker : l'app s'ouvre même sans connexion.
-const VERSION = 'ma-v2.0.0';
+const VERSION = 'ma-v3.0.0';
 const CORE = [
   '/', '/index.html', '/css/app.css', '/manifest.webmanifest',
   '/js/app.js', '/js/views.js', '/js/art.js', '/js/content.js', '/js/engine.js', '/js/sfx.js', '/js/store.js', '/js/api.js', '/js/config.js',

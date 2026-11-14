@@ -3,9 +3,10 @@
 import { kalou, img3d, icon } from './art.js';
 import {
   SLIDES, SEXES, AGES, ACTIVITIES, GOALS, CONDITIONS, PREGNANCY, ALLERGENS, DIETS, HABITS,
-  DISHES, SLOT_INFO, SLOT_WHY, NUTRIENTS, TAG_BENEFIT, HOW, PANTRY, seasonFor, CHAT_CHIPS,
-  PLANS, PLAN_NAMES, FEATURES, PAYMENTS, APPETITE_TIPS
+  DISHES, SLOT_INFO, SLOT_WHY, NUTRIENTS, TAG_BENEFIT, HOW, PANTRY, CHAT_CHIPS,
+  PLANS, PLAN_NAMES, FEATURES, APPETITE_TIPS, COUNTRIES, seasonForZone, SLOT_ORDER
 } from './content.js';
+import { now, wallClock, hhmm } from './time.js';
 
 export const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -54,16 +55,33 @@ export function onboarding(S, U) {
 }
 
 /* ================= Bilan : la consultation ================= */
+// req : obligatoire · opt : facultatif · mix : une partie obligatoire (signalée sur chaque question)
 const STEPS = [
-  { title: "Comment tu t'appelles ?", hint: 'Ta consultation avec Kalou : 7 petites étapes, 2 minutes.' },
-  { title: 'Parle-moi un peu de toi', hint: 'Les besoins changent selon l’âge, le sexe et l’activité.' },
-  { title: 'Ton poids et ta taille ?', hint: 'Facultatif. Ça m’aide à mieux te conseiller. Rien n’est partagé.' },
-  { title: 'Qu’est-ce que tu veux améliorer ?', hint: 'Ton objectif principal.' },
-  { title: 'Ta santé', hint: 'Coche ce qui te concerne. Tes réponses restent sur ton téléphone.' },
-  { title: 'Allergies et régime', hint: 'Les aliments concernés seront retirés de tous tes menus.' },
-  { title: 'Tes habitudes', hint: 'Sois honnête : c’est pour t’aider, pas pour te juger.' }
+  { title: "Comment tu t'appelles ?", hint: 'Ta consultation avec Kalou : 8 petites étapes, 2 minutes.', req: 'req' },
+  { title: 'Où vis-tu ?', hint: 'Ton menu suit les plats de ton pays, et l’heure de l’app suit son fuseau horaire.', req: 'req' },
+  { title: 'Parle-moi un peu de toi', hint: 'Les besoins changent selon l’âge, le sexe et l’activité.', req: 'mix' },
+  { title: 'Ton poids et ta taille ?', hint: 'Ça m’aide à mieux te conseiller. Rien n’est partagé.', req: 'opt' },
+  { title: 'Qu’est-ce que tu veux améliorer ?', hint: 'Ton objectif principal.', req: 'req' },
+  { title: 'Ta santé', hint: 'Réponds pour ta sécurité : coche ce qui te concerne, ou « Rien de tout ça ».', req: 'req' },
+  { title: 'Allergies et régime', hint: 'Les aliments concernés seront retirés de tous tes menus.', req: 'mix' },
+  { title: 'Tes habitudes', hint: 'Sois honnête : c’est pour t’aider, pas pour te juger.', req: 'opt' }
 ];
 export const SETUP_STEPS = STEPS.length;
+const fertileOf = (d) => d.sex === 'f' && ['13-17', '18-34', '35-59'].includes(d.age);
+// Réponse obligatoire manquante pour cette étape (message), ou null
+export function missingAnswer(step, d) {
+  const a = d.answered || {};
+  if (step === 0 && !(d.name || '').trim()) return 'Écris ton prénom pour continuer.';
+  if (step === 1 && !COUNTRIES.some((c) => c.id === d.country)) return 'Choisis ton pays pour continuer.';
+  if (step === 2 && (!d.sex || !d.age)) return 'Choisis ton sexe et ton âge pour continuer.';
+  if (step === 4 && !d.goal) return 'Choisis ton objectif pour continuer.';
+  if (step === 5 && !a.health) return 'Coche ce qui te concerne, ou « Rien de tout ça ».';
+  if (step === 5 && fertileOf(d) && !a.preg) return 'Dis-moi si tu es enceinte ou allaitante.';
+  if (step === 6 && !a.allergies) return 'Coche tes allergies, ou « Aucune allergie ».';
+  return null;
+}
+const need = (req) => `<em class="need ${req ? 'req' : 'free'}">${req ? 'Obligatoire' : 'Facultatif'}</em>`;
+const lblQ = (t, req, extra = '') => `<span class="lbl q" ${extra}>${t}${need(req)}</span>`;
 
 export function setup(S, U) {
   const d = U.draft, step = U.setupStep;
@@ -81,46 +99,57 @@ export function setup(S, U) {
     body = `<label for="f-name" class="lbl">Ton prénom</label>
       <input id="f-name" class="field ${d.name.trim() ? 'ok' : ''}" type="text" value="${esc(d.name)}" placeholder="Ex. Aminata" autocomplete="given-name" maxlength="40" data-input="name" enterkeyhint="next">`;
   } else if (step === 1) {
-    body = `<span class="lbl">Tu es</span>${pills(SEXES, d.sex, 'setSex')}
-      <span class="lbl">Ton âge</span>${pills(AGES, d.age, 'setAge')}
-      <span class="lbl">Ta journée</span>${ACTIVITIES.map((o) => opt(o, d.activity === o.id, 'setActivity', null)).join('')}`;
+    const at = new Date();
+    body = COUNTRIES.map((c) => {
+      const on = d.country === c.id;
+      return `<button class="opt country tap ${on ? 'on' : ''}" data-act="setCountry" data-arg="${c.id}" aria-pressed="${on}">
+        <span class="cc">${c.id.startsWith('autre') ? '·' : c.id.toUpperCase()}</span>
+        <span class="opt-txt"><b>${c.label}</b><small>${c.gmt} · il y est ${hhmm(wallClock(c.tz, at))}${c.dial ? ' · ' + c.dial : ''}</small></span>
+        <span class="opt-radio">${icon('check', 12, '#fff', 3.4)}</span></button>`;
+    }).join('') + '<small class="muted">Le fuseau horaire choisi règle l’heure de l’app, même si ton téléphone est réglé autrement.</small>';
   } else if (step === 2) {
+    body = `${lblQ('Tu es', true)}${pills(SEXES, d.sex, 'setSex')}
+      ${lblQ('Ton âge', true)}${pills(AGES, d.age, 'setAge')}
+      ${lblQ('Ta journée', false)}${ACTIVITIES.map((o) => opt(o, d.activity === o.id, 'setActivity', null)).join('')}`;
+  } else if (step === 3) {
     body = `<div class="grid2">
         <label class="num"><span>Poids</span><input type="number" inputmode="decimal" min="25" max="250" value="${d.weight || ''}" placeholder="—" data-input="weight"><em>kg</em></label>
         <label class="num"><span>Taille</span><input type="number" inputmode="numeric" min="120" max="220" value="${d.height || ''}" placeholder="—" data-input="height"><em>cm</em></label>
       </div>
       <small class="muted">Tu ne sais pas ? Laisse vide et continue.</small>`;
-  } else if (step === 3) {
-    body = GOALS.map((o) => opt(o, d.goal === o.id, 'setGoal', o.icon)).join('');
   } else if (step === 4) {
-    const fertile = d.sex === 'f' && ['13-17', '18-34', '35-59'].includes(d.age);
-    body = CONDITIONS.map((o) => opt(o, d.conditions.includes(o.id), 'toggleCond', null, true)).join('') +
-      `<button class="opt tap ${!d.conditions.length ? 'on' : ''}" data-act="noCond" aria-pressed="${!d.conditions.length}"><span class="opt-txt"><b>Rien de tout ça</b></span><span class="opt-radio">${icon('check', 12, '#fff', 3.4)}</span></button>` +
-      (fertile ? `<span class="lbl" style="margin-top:6px">Enceinte ou allaitante ?</span>${pills(PREGNANCY, d.pregnancy, 'setPreg')}` : '');
+    body = GOALS.map((o) => opt(o, d.goal === o.id, 'setGoal', o.icon)).join('');
   } else if (step === 5) {
-    body = `<div class="allergy-grid">${ALLERGENS.map((a) => {
+    const fertile = fertileOf(d), ans = d.answered || {};
+    body = CONDITIONS.map((o) => opt(o, d.conditions.includes(o.id), 'toggleCond', null, true)).join('') +
+      `<button class="opt tap ${ans.health && !d.conditions.length ? 'on' : ''}" data-act="noCond" aria-pressed="${!!ans.health && !d.conditions.length}"><span class="opt-txt"><b>Rien de tout ça</b></span><span class="opt-radio">${icon('check', 12, '#fff', 3.4)}</span></button>` +
+      (fertile ? `${lblQ('Enceinte ou allaitante ?', true, 'style="margin-top:6px"')}${pills(PREGNANCY, ans.preg ? d.pregnancy : null, 'setPreg')}` : '');
+  } else if (step === 6) {
+    const ans = d.answered || {};
+    body = `${lblQ('Tes allergies', true)}<div class="allergy-grid">${ALLERGENS.map((a) => {
       const on = d.allergies.includes(a.id);
       return `<button class="allergy tap ${on ? 'on' : ''}" data-act="toggleAllergy" data-arg="${a.id}" aria-pressed="${on}">${img3d(a.icon, 40)}<span>${a.label}</span></button>`;
     }).join('')}</div>
-      <button class="opt tap ${!d.allergies.length ? 'on' : ''}" data-act="noAllergy" aria-pressed="${!d.allergies.length}"><span class="opt-txt"><b>Aucune allergie</b></span><span class="opt-radio">${icon('check', 12, '#fff', 3.4)}</span></button>
-      <span class="lbl" style="margin-top:6px">Ton régime</span>${pills(DIETS, d.diet, 'setDiet')}`;
+      <button class="opt tap ${ans.allergies && !d.allergies.length ? 'on' : ''}" data-act="noAllergy" aria-pressed="${!!ans.allergies && !d.allergies.length}"><span class="opt-txt"><b>Aucune allergie</b></span><span class="opt-radio">${icon('check', 12, '#fff', 3.4)}</span></button>
+      ${lblQ('Ton régime', false, 'style="margin-top:6px"')}${pills(DIETS, d.diet, 'setDiet')}`;
   } else {
     body = HABITS.map((h) => `<div class="habit"><b>${h.q}</b><div class="pills">${h.opts.map((o) => {
       const on = d.habits[h.id] === o[0];
       return `<button class="pl tap ${on ? 'on' : ''}" data-act="setHabit" data-arg="${h.id}:${o[0]}" aria-pressed="${on}">${o[1]}</button>`;
     }).join('')}</div></div>`).join('');
   }
-  const disabled = (step === 0 && !d.name.trim()) || (step === 1 && (!d.sex || !d.age));
-  const n = STEPS.length;
+  const disabled = !!missingAnswer(step, d);
+  const n = STEPS.length, only = U.countryOnly;
   return `<section class="setup">
     <div class="setup-top">
       <button class="round" data-act="setupBack" aria-label="Retour">${icon('back', 20, '#141614', 1.8)}</button>
-      <div class="segs" role="progressbar" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${step + 1}" aria-label="Progression">${STEPS.map((_, i) => `<span><i style="width:${i < step ? 100 : i === step ? 50 : 0}%"></i></span>`).join('')}</div>
+      <div class="segs ${only ? 'hide' : ''}" role="progressbar" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${step + 1}" aria-label="Progression">${STEPS.map((_, i) => `<span><i style="width:${i < step ? 100 : i === step ? 50 : 0}%"></i></span>`).join('')}</div>
       <span class="muted">${step + 1}/${n}</span>
     </div>
-    <div class="ask"><div class="ask-kalou">${kalou(step === n - 1 ? 'bravo' : step % 2 ? 'clin' : 'joie', 88)}</div><div class="ask-bubble popnow"><b>${q.title}</b><small>${q.hint}</small></div></div>
+    <div class="ask"><div class="ask-kalou">${kalou(step === n - 1 ? 'bravo' : step % 2 ? 'clin' : 'joie', 88)}</div><div class="ask-bubble popnow"><b>${q.title}</b><small>${q.hint}</small>${q.req === 'mix' ? '<em class="need mix">Obligatoire en partie</em>' : need(q.req === 'req')}</div></div>
     <div class="setup-body">${body}</div>
-    ${cta(step < n - 1 ? 'Continuer' : (U.editing ? 'Mettre à jour mon bilan' : 'Voir mon bilan'), 'setupNext', { disabled, id: 'setup-cta' })}
+    ${cta(only ? 'Enregistrer mon pays' : step < n - 1 ? 'Continuer' : (U.editing ? 'Mettre à jour mon bilan' : 'Voir mon bilan'), 'setupNext', { disabled, id: 'setup-cta' })}
+    ${q.req === 'opt' && !only ? `<button class="link center" data-act="skipStep">${step < n - 1 ? 'Passer cette question' : 'Passer et voir mon bilan'}</button>` : ''}
   </section>`;
 }
 function opt(o, on, act, ico, check) {
@@ -194,8 +223,8 @@ export function bilan(S, U, C) {
 export function mealIcon(m, size = 30) { return img3d(m.icon || 'pot-of-food', size); }
 
 export function home(S, U, C) {
-  const p = S.profile, A = C.A, now = new Date();
-  const hour = now.getHours();
+  const p = S.profile, A = C.A, today = C.now;
+  const hour = today.getHours();
   const words = p.name.trim().split(/\s+/);
   const initials = ((words[0] || 'A')[0] + (words[1] ? words[1][0] : '')).toUpperCase();
   const theme = C.theme(0);
@@ -214,8 +243,10 @@ export function home(S, U, C) {
     </div>
 
     <button class="theme tap fu d2" data-act="themeInfo">
-      ${img3d(theme.icon, 40)}<span><small>${longDate(now)}</small><b>${theme.title}</b></span>${icon('next', 16, '#2C7546', 2)}
+      ${img3d(theme.icon, 40)}<span><small>${longDate(today)} · ${hhmm(today)}${C.country ? ' ' + C.country.gmt : ''}</small><b>${theme.title}</b></span>${icon('next', 16, '#2C7546', 2)}
     </button>
+
+    ${!p.country ? `<button class="card country-ask tap fu d2" data-act="askCountry">${img3d('pot-of-food', 40)}<span class="grow"><b>Où vis-tu ?</b><small class="muted">Dis-le à Kalou : ton menu suivra les plats de ton pays, et l’heure suivra ton fuseau.</small></span>${icon('next', 16, '#2C7546', 2)}</button>` : ''}
 
     ${hero ? `<div class="hero-meal fu d2">
       <div class="hm-top"><span class="hm-when">${hero.when}</span><span class="hm-slot">${SLOT_INFO[hero.slot].label} · ${SLOT_INFO[hero.slot].time}</span></div>
@@ -223,6 +254,7 @@ export function home(S, U, C) {
         <div class="hm-img">${mealIcon(hero, 84)}</div>
         <div class="hm-txt"><small>Idéal pour toi ${hero.isNow ? 'maintenant' : 'à ' + SLOT_INFO[hero.slot].time}</small><b>${esc(hero.name)}</b><em>${esc(hero.portion)}</em></div>
       </div>
+      ${fiche(hero)}
       <p class="hm-why"><b>Pourquoi maintenant ?</b> ${SLOT_WHY[hero.slot]}</p>
       <div class="gives"><small>Ce repas t'apporte</small>${hero.gives.map((g) => `<span>${icon('check', 12, '#15803D', 3)}${g}</span>`).join('')}</div>
       <div class="hm-actions">
@@ -260,6 +292,12 @@ export function home(S, U, C) {
         <small>${SLOT_INFO[m.slot].time}</small>${mealIcon(m, 34)}<span>${esc(m.name)}</span>${m.takenAt ? `<i>${icon('check', 12, '#fff', 3)}</i>` : ''}</button>`).join('')}</div>
     </div>
 
+    <button class="wheel-promo tap fu d4" data-act="go" data-arg="wheel">
+      <span class="wp-wheel" aria-hidden="true">${miniWheel()}</span>
+      <span class="grow"><small>TU NE SAIS PAS QUOI PRÉPARER ?</small><b>Tourne la roue de Kalou</b><em>Que des plats bons pour toi, de ton pays, dans le temps que tu as.</em></span>
+      ${icon('next', 18, '#fff', 2.2)}
+    </button>
+
     <div class="quick fu d5">
       <button class="qa" data-act="go" data-arg="plan"><span>${img3d('spiral-calendar', 44)}</span>Ma semaine</button>
       <button class="qa" data-act="go" data-arg="cook"><span>${img3d('pot-of-food', 44)}</span>Cuisiner</button>
@@ -278,9 +316,17 @@ export function home(S, U, C) {
   </section>`;
 }
 
+// Petite fiche d'un plat : ce que c'est, temps de préparation, plat d'ici
+export function fiche(m, full = true) {
+  if (!m.desc && !m.min) return '';
+  return `<div class="fiche">${full && m.desc ? `<p>${esc(m.desc)}</p>` : ''}<div class="fiche-meta">
+    ${m.min ? `<span>${img3d('alarm-clock', 14)} ${m.min >= 60 ? Math.floor(m.min / 60) + ' h' + (m.min % 60 ? ' ' + (m.min % 60) : '') : m.min + ' min'}</span>` : ''}
+    ${m.local ? `<span class="loc">${img3d('seedling', 14)} Plat de chez toi</span>` : ''}
+    ${m.baseName && m.baseName !== m.name ? `<span class="aka">aussi appelé « ${esc(m.baseName)} »</span>` : ''}</div></div>`;
+}
 function recipeBox(m) {
   const steps = HOW[m.id] || [];
-  return `<div class="recipe popnow"><b>Comment le préparer</b><ol>${steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>
+  return `<div class="recipe popnow"><b>Comment le préparer${m.min ? ` <small class="muted">· ${m.min} min</small>` : ''}</b><ol>${steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>
     ${m.ing && m.ing.length ? `<small class="muted">Il te faut : ${m.ing.map(esc).join(', ')}.</small>` : ''}</div>`;
 }
 
@@ -311,6 +357,7 @@ function mealRow(m, off, U, C) {
       <span class="meal-txt"><b>${esc(m.name)}</b><small>${esc(m.portion)}</small></span>
       ${off === 0 ? `<button class="check-btn ${m.takenAt ? 'on' : ''}" data-act="eat" data-arg="${m.slot}" aria-pressed="${!!m.takenAt}" aria-label="${m.takenAt ? 'Annuler' : 'Je l’ai mangé'}">${icon('check', 18, m.takenAt ? '#fff' : '#9AA19B', 2.6)}</button>` : ''}
     </div>
+    ${m.desc ? `<p class="mc-desc">${esc(m.desc)}</p>` : ''}${fiche(m, false)}
     <div class="why-chips">${m.reasons.map((r) => `<span>${esc(r)}</span>`).join('')}</div>
     <div class="mc-actions"><button class="link sm" data-act="recipe" data-arg="${k}">${U.open === k ? 'Fermer' : 'Recette'}</button><button class="link sm" data-act="swap" data-arg="${k}">Autre idée</button>${m.takenAt ? `<small class="ok-txt">Mangé à ${m.takenAt}</small>` : ''}</div>
     ${U.open === k ? recipeBox(m) : ''}
@@ -322,6 +369,7 @@ export function cook(S, U, C) {
   const tab = U.cookTab;
   return `<section class="page">
     ${header('Cuisiner')}
+    <button class="wheel-promo slim tap fu d2" data-act="go" data-arg="wheel"><span class="wp-wheel" aria-hidden="true">${miniWheel()}</span><span class="grow"><b>Pas d’idée ? Tourne la roue</b><em>Kalou choisit avec toi</em></span>${icon('next', 18, '#fff', 2.2)}</button>
     <div class="seg2 fu d2"><button class="${tab === 'have' ? 'on' : ''}" data-act="cookTab" data-arg="have">J'ai ces ingrédients</button><button class="${tab === 'improve' ? 'on' : ''}" data-act="cookTab" data-arg="improve">Améliorer un plat</button></div>
     ${tab === 'have' ? cookHave(S, U, C) : cookImprove(S, U, C)}
   </section>`;
@@ -333,6 +381,7 @@ function cookHave(S, U, C) {
   <div class="card fu d3"><div class="tags pick">${PANTRY.map((i) => `<button class="tap ${have.includes(i) ? 'on' : ''}" data-act="toggleHave" data-arg="${esc(i)}" aria-pressed="${have.includes(i)}">${esc(i)}</button>`).join('')}</div>
   ${have.length ? '<button class="link center" data-act="clearHave">Tout décocher</button>' : ''}</div>
   ${res.map((m, i) => `<div class="card meal-card fu d4"><div class="mc-top"><span class="meal-ico">${mealIcon(m, 34)}</span><span class="meal-txt"><b>${esc(m.name)}</b><small>${m.missing.length ? 'Il te manque : ' + m.missing.map(esc).join(', ') : 'Tu as tout ce qu’il faut !'}</small></span></div>
+    ${m.desc ? `<p class="mc-desc">${esc(m.desc)}</p>` : ''}${fiche(m, false)}
     <div class="why-chips">${m.reasons.map((r) => `<span>${esc(r)}</span>`).join('')}</div>
     <div class="mc-actions"><button class="link sm" data-act="recipe" data-arg="cook:${i}">${U.open === 'cook:' + i ? 'Fermer' : 'Recette'}</button></div>
     ${U.open === 'cook:' + i ? recipeBox(m) : ''}</div>`).join('')}`;
@@ -370,7 +419,7 @@ export function market(S, U, C) {
       return `<button class="li check tap ${on ? 'on' : ''}" data-act="toggleItem" data-arg="${esc(it.name)}" role="checkbox" aria-checked="${on}"><span class="box round-box">${icon('check', 13, '#fff', 3.4)}</span><span class="grow">${esc(it.name)}</span><small>${it.n} repas</small></button>`;
     }).join('')}</div>
     ${bought ? '<button class="link center" data-act="clearList">Tout décocher</button>' : ''}
-    <div class="card stack fu d4"><div class="row">${img3d('seedling', 30)}<b>De saison en ce moment</b></div><div class="tags">${seasonFor(new Date().getMonth() + 1).map((s) => `<span>${s}</span>`).join('')}</div><small class="muted">Plus frais, plus savoureux. À adapter selon ta région.</small></div>
+    <div class="card stack fu d4"><div class="row">${img3d('seedling', 30)}<b>De saison en ce moment</b></div><div class="tags">${seasonForZone((C.country || {}).zone, C.now.getMonth() + 1).map((s) => `<span>${s}</span>`).join('')}</div><small class="muted">${C.country && !C.country.id.startsWith('autre') ? 'Saison ' + esc(C.country.in) + '. ' : ''}Plus frais, plus savoureux, moins cher.</small></div>
     ${!C.isPlus ? `<button class="promo dark tap fu d5" data-act="go" data-arg="offers"><span><b>La liste de toute ta semaine</b><em>${C.trialUsed ? 'Avec Mon Assiette Plus' : 'Essai gratuit 72 h'}</em></span><i class="tag-plus">Plus</i></button>` : ''}
   </section>`;
 }
@@ -413,6 +462,7 @@ export function profile(S, U, C) {
     <div class="card list fu d3">
       <button class="li tap" data-act="go" data-arg="bilan"><span class="row">${img3d('clipboard', 28)}<b>Mon bilan nutritionnel</b></span>›</button>
       <button class="li tap" data-act="editProfile"><span class="row">${img3d('counterclockwise-arrows-button', 28)}<b>Refaire mon bilan</b></span>›</button>
+      <button class="li tap" data-act="askCountry"><span class="row">${img3d('alarm-clock', 28)}<span><b>${C.country ? esc(C.country.label) : 'Choisir mon pays'}</b><small>${C.country ? 'Heure de l’app : ' + hhmm(C.now) + ' (' + C.country.gmt + ')' : 'Pour ton menu et ton heure'}</small></span></span>›</button>
       <button class="li tap" data-act="toggleSound" role="switch" aria-checked="${S.sound}"><span class="row">${img3d(S.sound ? 'speaker-high-volume' : 'muted-speaker', 28)}<b>Sons</b></span><span class="switch ${S.sound ? 'on' : ''}"><i></i></span></button>
     </div>
     <div class="card fu d3 stack ${C.isPlus ? 'dark' : ''}">
@@ -435,22 +485,23 @@ export function profile(S, U, C) {
       </div>
       ${U.info ? `<div class="note popnow">${ABOUT[U.info]}</div>` : ''}</div>
     <button class="btn-danger tap" data-act="wipe">Effacer mes données et recommencer</button>
-    <p class="fine">Mon Assiette · version 2.0 · Icônes Fluent Emoji (Microsoft, licence MIT)</p>
+    <p class="fine">Mon Assiette · version 3.0 · Icônes Fluent Emoji (Microsoft, licence MIT)</p>
   </section>`;
 }
 
 /* ================= Offres ================= */
 function payTile(m, on) {
   const inner = m.logo
-    ? `<span class="pay-logo" style="background:${m.color};color:${m.ink}">${img3d('mobile-phone', 26)}<img class="brand" src="${m.logo}" alt="${m.label}" onerror="this.remove()"></span>`
+    ? `<span class="pay-logo" style="background:${m.color}">${img3d('mobile-phone', 26)}<img class="brand" src="${m.logo}" alt="${m.label}" onerror="this.remove()"></span>`
     : `<span class="pay-logo" style="background:${m.color}">${img3d(m.icon, 30)}</span>`;
   return `<button class="pay tap ${on ? 'on' : ''}" data-act="pickPay" data-arg="${m.id}" aria-pressed="${on}">${inner}<span>${m.label}</span></button>`;
 }
 export function offers(S, U, C) {
   const chosen = PLANS.find((p) => p.id === U.offerPlan) || PLANS[1];
-  const payment = PAYMENTS.find((x) => x.id === U.pay) || PAYMENTS[0];
+  const methods = C.payMethods, payment = methods.find((x) => x.id === U.pay) || methods[0];
   const digits = (U.phone || '').replace(/\D/g, '');
-  const phoneOk = !payment.phone || digits.length === 8;
+  const len = payment.len || 8;
+  const phoneOk = !payment.phone || digits.length === len;
   const canTrial = !C.trialUsed || C.isPlus;
   return `<section class="page">
     ${header('Mon Assiette <span class="green">Plus</span>')}
@@ -462,10 +513,11 @@ export function offers(S, U, C) {
       ${FEATURES.map((f) => `<div class="feat-row"><span>${f[0]}</span><span class="${f[1] === '—' ? 'no' : 'yes'}">${f[1]}</span><span class="yes b">${f[2]}</span></div>`).join('')}</div>
     <div class="fu d5 stack">
       <span class="lbl">Payer avec ${canTrial ? "(après l'essai)" : ''}</span>
-      <div class="pays">${PAYMENTS.map((m) => payTile(m, m.id === payment.id)).join('')}</div>
+      <div class="pays" style="grid-template-columns:repeat(${Math.min(methods.length, 3)},minmax(0,1fr))">${methods.map((m) => payTile(m, m.id === payment.id)).join('')}</div>
+      ${C.country && !C.country.ops.length ? '<small class="muted">Le Mobile Money de ton pays arrive bientôt. En attendant, la carte est possible.</small>' : ''}
       ${payment.phone ? `<label for="pay-phone" class="lbl">Ton numéro ${payment.label}</label>
-        <div class="phone ${digits.length === 0 ? '' : phoneOk ? 'ok' : 'warn'}"><span>+226</span><input id="pay-phone" type="tel" inputmode="numeric" value="${esc(U.phone)}" placeholder="70 00 00 00" maxlength="11" data-input="phone" autocomplete="tel-national"></div>
-        <small class="muted" id="phone-hint">${digits.length === 0 ? '8 chiffres. Aucun paiement maintenant.' : phoneOk ? 'Numéro valide.' : 'Encore ' + (8 - digits.length) + ' chiffre(s).'}</small>`
+        <div class="phone ${digits.length === 0 ? '' : phoneOk ? 'ok' : 'warn'}"><span>${payment.dial}</span><input id="pay-phone" type="tel" inputmode="numeric" value="${esc(U.phone)}" placeholder="${{ 8: '70 00 00 00', 9: '77 000 00 00', 10: '07 00 00 00 00' }[len] || ''}" maxlength="${len + 4}" data-input="phone" autocomplete="tel-national"></div>
+        <small class="muted" id="phone-hint">${digits.length === 0 ? len + ' chiffres. Aucun paiement maintenant.' : phoneOk ? 'Numéro valide.' : digits.length < len ? 'Encore ' + (len - digits.length) + ' chiffre(s).' : 'Trop de chiffres (' + len + ' attendus).'}</small>`
       : '<small class="muted">La carte sera demandée de façon sécurisée, seulement si tu continues après l’essai.</small>'}
     </div>
     <div class="fu d6 stack">
@@ -478,6 +530,63 @@ export function offers(S, U, C) {
       </div>
       <p class="fine">Rappel avant la fin de l'essai. Aucun prélèvement si tu arrêtes avant 72 h. Prix en F CFA.</p>
     </div>
+  </section>`;
+}
+
+/* ================= La roue de Kalou ================= */
+const WCOL = ['#2F8F4E', '#F59E0B', '#F05A3C', '#2563EB', '#7CCB6E', '#FF8A3D', '#0F766E', '#B45309'];
+function miniWheel() {
+  return `<svg viewBox="0 0 40 40" width="40" height="40">${[0, 1, 2, 3, 4, 5].map((i) => { const a = i * 60, b = a + 60, r = 18, rad = (x) => (x - 90) * Math.PI / 180;
+    return `<path d="M20 20 L${20 + r * Math.cos(rad(a))} ${20 + r * Math.sin(rad(a))} A${r} ${r} 0 0 1 ${20 + r * Math.cos(rad(b))} ${20 + r * Math.sin(rad(b))}Z" fill="${WCOL[i]}"/>`; }).join('')}<circle cx="20" cy="20" r="5" fill="#fff"/></svg>`;
+}
+const WHEEL_SLOTS = ['matin', 'collation', 'midi', 'dessert', 'bienetre', 'soir'];
+const WHEEL_TIMES = [[15, '15 min'], [30, '30 min'], [60, '1 h'], [999, 'J’ai le temps']];
+export function wheel(S, U, C) {
+  const W = U.wheel, slot = W.slot || C.slotNow, { items, relaxed } = C.wheel(slot, W.time === 999 ? 0 : W.time);
+  const R = 140, cx = 150, cy = 150, rad = (x) => (x - 90) * Math.PI / 180;
+  let acc = 0;
+  const segs = items.map((m, i) => {
+    const a = acc, b = acc + m.share * 360; acc = b;
+    const mid = (a + b) / 2, large = b - a > 180 ? 1 : 0;
+    const p1 = [cx + R * Math.cos(rad(a)), cy + R * Math.sin(rad(a))], p2 = [cx + R * Math.cos(rad(b)), cy + R * Math.sin(rad(b))];
+    const ir = R * 0.68, ix = cx + ir * Math.cos(rad(mid)), iy = cy + ir * Math.sin(rad(mid)), sz = Math.max(26, Math.min(44, (b - a) * 0.75));
+    const path = items.length === 1 ? `<circle cx="${cx}" cy="${cy}" r="${R}" fill="${WCOL[i % 8]}"/>` : `<path d="M${cx} ${cy} L${p1[0].toFixed(2)} ${p1[1].toFixed(2)} A${R} ${R} 0 ${large} 1 ${p2[0].toFixed(2)} ${p2[1].toFixed(2)}Z" fill="${WCOL[i % 8]}" stroke="#fff" stroke-width="2"/>`;
+    return `${path}<image href="/assets/icons/${m.icon || 'pot-of-food'}.webp" x="${(ix - sz / 2).toFixed(1)}" y="${(iy - sz / 2).toFixed(1)}" width="${sz.toFixed(0)}" height="${sz.toFixed(0)}" transform="rotate(${mid.toFixed(1)} ${ix.toFixed(1)} ${iy.toFixed(1)})"/>`;
+  }).join('');
+  const res = W.result, left = Math.max(0, 4 - W.spins);
+  return `<section class="page wheel-page">
+    ${header('La roue de Kalou', { back: 'home' })}
+    <div class="card stack fu d2">
+      <span class="lbl">Pour quel moment ?</span>
+      <div class="pills">${WHEEL_SLOTS.map((x) => `<button class="pl tap ${x === slot ? 'on' : ''}" data-act="wheelSlot" data-arg="${x}" aria-pressed="${x === slot}" ${W.spinning ? 'disabled' : ''}>${SLOT_INFO[x].label}</button>`).join('')}</div>
+      <span class="lbl">Combien de temps as-tu ?</span>
+      <div class="pills">${WHEEL_TIMES.map(([v, l]) => `<button class="pl tap ${v === W.time ? 'on' : ''}" data-act="wheelTime" data-arg="${v}" aria-pressed="${v === W.time}" ${W.spinning ? 'disabled' : ''}>${l}</button>`).join('')}</div>
+      ${relaxed ? '<small class="muted">Peu de plats aussi rapides pour ce moment : j’ai mis les plus rapides qui te conviennent.</small>' : ''}
+    </div>
+    <div class="wheel-box fu d3">
+      <div class="wheel-pointer" aria-hidden="true"></div>
+      <svg class="wheel-svg" viewBox="0 0 300 300" role="img" aria-label="Roue de ${items.length} plats">
+        <circle cx="150" cy="150" r="148" fill="#141614"/>
+        <g id="wheel-disc" style="transform:rotate(${W.rot}deg);transform-origin:150px 150px">${segs}</g>
+        <circle cx="150" cy="150" r="30" fill="#fff" stroke="#141614" stroke-width="4"/>
+      </svg>
+      <button class="spin-hub tap" id="spin-btn" data-act="spin" ${W.spinning || !left ? 'aria-disabled="true"' : ''} aria-label="Tourner la roue">${W.spinning ? '…' : W.spins ? 'Encore' : 'Tourner'}</button>
+    </div>
+    <p class="wheel-note fu d3">${W.spinning ? 'Ça tourne…' : W.spins === 0 ? 'Plus une case est grande, plus le plat te fait du bien, et plus il a de chances de sortir.' : left ? `Encore ${left - 0} relance${left > 1 ? 's' : ''} possible${left > 1 ? 's' : ''}.` : 'Plus de relance : la roue a parlé !'}</p>
+    ${W.msg && !W.spinning ? `<div class="tip-row popnow"><div class="tip-kalou">${kalou('clin', 70)}</div><div class="tip-bubble"><p>${esc(W.msg)}</p></div></div>` : ''}
+    ${res && !W.spinning ? `<div class="hero-meal wheel-res popnow">
+      <div class="hm-top"><span class="hm-when">La roue a choisi</span><span class="hm-slot">${SLOT_INFO[slot].label}</span></div>
+      <div class="hm-main"><div class="hm-img">${mealIcon(res, 84)}</div><div class="hm-txt"><small>${Math.round(res.share * 100)} % de chances · bon pour toi</small><b>${esc(res.name)}</b><em>${esc(res.portion)}</em></div></div>
+      ${fiche(res)}
+      <div class="gives"><small>Pourquoi il te convient</small>${res.reasons.map((g) => `<span>${icon('check', 12, '#15803D', 3)}${esc(g)}</span>`).join('')}</div>
+      <div class="hm-actions">
+        <button class="btn-dark tap" data-act="wheelPick">${icon('check', 16, '#fff', 2.6)} Je le prépare</button>
+        <button class="chip-btn light tap" data-act="wheelRecipe">${U.open === 'wheel' ? 'Fermer' : 'Recette'}</button>
+      </div>
+      ${U.open === 'wheel' ? recipeBox(res) : ''}
+    </div>` : ''}
+    <div class="card stack fu d4"><b>Sur la roue</b>${items.map((m, i) => `<div class="wl"><i style="background:${WCOL[i % 8]}"></i><span class="grow">${esc(m.name)}${m.local ? ' <em class="loc-dot">de chez toi</em>' : ''}</span><small>${m.min ? m.min + ' min · ' : ''}${Math.round(m.share * 100)} %</small></div>`).join('')}
+      <small class="muted">Seulement des plats sûrs pour toi : ${S.profile.allergies.length ? 'sans tes allergènes, ' : ''}adaptés à ton bilan${C.country && !C.country.id.startsWith('autre') ? ' et courants ' + esc(C.country.in) : ''}.</small></div>
   </section>`;
 }
 

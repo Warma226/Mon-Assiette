@@ -61,3 +61,13 @@ Ils s'affichent automatiquement. En leur absence, l'app montre une pastille aux 
 - Validation de tout le contenu par une nutritionniste.
 - Brancher le paiement Mobile Money (CinetPay, PayDunya ou FedaPay) à la fin de l'essai.
 - Logos officiels des opérateurs.
+
+## Version 3
+
+- **Pays de résidence** (question obligatoire) : Burkina Faso, Côte d'Ivoire, Sénégal, Mali, Bénin, Togo, Niger, Guinée, ou « autre pays » (GMT ou GMT+1). Le menu ne propose que des plats courants dans le pays, avec leur nom local (Ndambé, Thiakry, Watché/Ayimolou, Tigadèguèna…), et les plats signature du pays passent devant. 21 plats nationaux ajoutés (75 au total).
+- **Heure du pays** : l'app lit l'heure murale du fuseau du pays choisi (`js/time.js`), pas celle du téléphone : moment idéal, rappels, thème du jour, changement de jour, défis et série.
+- **Fiche de chaque plat** : description, temps de préparation, « plat de chez toi », autre nom.
+- **Questions obligatoires et facultatives** : badges sur chaque question, bouton « Passer » sur les étapes facultatives. Obligatoire : prénom, pays, sexe, âge, objectif, santé (réponse explicite), grossesse/allaitement pour les femmes concernées, allergies (réponse explicite). Facultatif : activité, poids/taille, régime, habitudes.
+- **La roue de Kalou** : choisis le moment et le temps disponible, la roue ne contient que des plats sûrs pour ton profil et de ton pays. La taille de chaque case dépend de l'intérêt du plat pour ton bilan. 3 relances, puis « Je le prépare » l'ajoute au menu du jour.
+- **Paiement par pays** : opérateurs, indicatif et longueur du numéro selon le pays.
+- Base : colonne `country` ajoutée à `ma_profiles`.

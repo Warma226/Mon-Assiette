@@ -18,7 +18,7 @@ export function fresh() {
     onboarded: false,
     profile: JSON.parse(JSON.stringify(DEFAULT_PROFILE)),
     sound: true,
-    swaps: {},
+    swaps: {}, picks: {},
     missions: {},
     trial: null,
     pay: { method: 'orange', phone: '' },

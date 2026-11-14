@@ -53,7 +53,8 @@ export function makeApi(deviceId) {
         kids: false,
         budget: [500, 1000, 2000].includes(p.budget) ? p.budget : 2000,
         lang: 'Français',
-        notif: p.notif
+        notif: p.notif,
+        country: ['bf', 'ci', 'sn', 'ml', 'bj', 'tg', 'ne', 'gn', 'autre0', 'autre1'].includes(p.country) ? p.country : null
       }], 'device_id');
     },
     getProfile() {

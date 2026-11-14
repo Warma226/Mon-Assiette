@@ -366,3 +366,170 @@ export const TAG_BENEFIT = {
   vitc: 'de la vitamine C pour tes défenses', vita: 'de la vitamine A pour tes yeux', calcium: 'du calcium pour tes os',
   veg: 'des minéraux et des antioxydants', refresh: 'de l’eau pour ton corps, avec du goût', calm: 'un moment de calme pour bien dormir', appetite: 'un coup de fouet pour l’appétit', digest: 'un geste doux pour la digestion', lowgi: 'un sucre qui monte doucement, sans coup de barre', soft: 'un repas qui se digère facilement'
 };
+
+/* ---------- Pays : plats, fuseau horaire, téléphone, Mobile Money ---------- */
+export const COUNTRIES = [
+  { id: 'bf', in: "au Burkina Faso", label: 'Burkina Faso', tz: 'Africa/Ouagadougou', gmt: 'GMT', dial: '+226', len: 8, zone: 'sahel', ops: ['orange', 'moov'] },
+  { id: 'ci', in: "en Côte d'Ivoire", label: "Côte d'Ivoire", tz: 'Africa/Abidjan', gmt: 'GMT', dial: '+225', len: 10, zone: 'cote', ops: ['orange', 'mtn', 'moov', 'wave'] },
+  { id: 'sn', in: "au Sénégal", label: 'Sénégal', tz: 'Africa/Dakar', gmt: 'GMT', dial: '+221', len: 9, zone: 'sahel', ops: ['orange', 'wave'] },
+  { id: 'ml', in: "au Mali", label: 'Mali', tz: 'Africa/Bamako', gmt: 'GMT', dial: '+223', len: 8, zone: 'sahel', ops: ['orange', 'moov'] },
+  { id: 'bj', in: "au Bénin", label: 'Bénin', tz: 'Africa/Porto-Novo', gmt: 'GMT+1', dial: '+229', len: 10, zone: 'cote', ops: ['mtn', 'moov'] },
+  { id: 'tg', in: "au Togo", label: 'Togo', tz: 'Africa/Lome', gmt: 'GMT', dial: '+228', len: 8, zone: 'cote', ops: ['moov', 'mixx'] },
+  { id: 'ne', in: "au Niger", label: 'Niger', tz: 'Africa/Niamey', gmt: 'GMT+1', dial: '+227', len: 8, zone: 'sahel', ops: ['airtel', 'moov'] },
+  { id: 'gn', in: "en Guinée", label: 'Guinée', tz: 'Africa/Conakry', gmt: 'GMT', dial: '+224', len: 9, zone: 'cote', ops: ['orange', 'mtn'] },
+  { id: 'autre0', in: "dans ton pays", label: 'Autre pays (heure GMT)', tz: 'Africa/Abidjan', gmt: 'GMT', dial: '', len: 0, zone: 'sahel', ops: [] },
+  { id: 'autre1', in: "dans ton pays", label: 'Autre pays (heure GMT+1)', tz: 'Africa/Lagos', gmt: 'GMT+1', dial: '', len: 0, zone: 'cote', ops: [] }
+];
+export const OPERATORS = {
+  orange: { label: 'Orange Money', logo: '/assets/pay/orange-money.png', color: '#FF7900' },
+  moov: { label: 'Moov Money', logo: '/assets/pay/moov-money.png', color: '#0066B3' },
+  mtn: { label: 'MTN MoMo', logo: '/assets/pay/mtn-momo.png', color: '#FFCB05' },
+  wave: { label: 'Wave', logo: '/assets/pay/wave.png', color: '#1DC4FF' },
+  airtel: { label: 'Airtel Money', logo: '/assets/pay/airtel-money.png', color: '#E40000' },
+  mixx: { label: 'Mixx by Yas', logo: '/assets/pay/mixx.png', color: '#FFD100' }
+};
+
+// Plats propres à chaque pays (s'ajoutent au catalogue commun)
+MEALS.push(
+  // Burkina Faso
+  M('midi', 'babenda', 'Babenda', 'Feuilles mijotées avec un peu de mil et de haricot, soumbala', 1, [], ['iron', 'folate', 'fiber', 'veg', 'lowgi', 'protein'], ['Feuilles', 'Farine de mil', 'Haricot', 'Soumbala'], 'herb'),
+  M('matin', 'gonre', 'Gonré', '2 à 3 morceaux · avec un peu de piment', 1, [], ['protein', 'fiber', 'iron', 'lowgi'], ['Haricot', 'Oignons'], 'bento-box'),
+  M('bienetre', 'zoomkoom', 'Zoom-koom', '1 verre frais · très peu sucré', 1, [], ['drink', 'energy', 'appetite', 'refresh'], ['Farine de mil', 'Gingembre', 'Citron'], 'cup-with-straw'),
+  // Côte d'Ivoire
+  M('midi', 'garba', 'Garba', 'Attiéké + thon braisé, tomate-oignon · demande peu d’huile', 1, ['poisson'], ['protein', 'fish', 'refined', 'fat', 'energy'], ['Attiéké', 'Poisson', 'Tomates', 'Oignons'], 'fish'),
+  M('midi', 'kedjenou', 'Kedjenou de poulet + attiéké', 'Poulet mijoté à l’étouffée, presque sans huile', 3, [], ['protein', 'meat', 'lowfat', 'veg'], ['Poulet', 'Attiéké', 'Tomates', 'Oignons', 'Carottes, chou, aubergines'], 'pot-of-food'),
+  M('midi', 'foutou_graine', 'Foutou banane, sauce graine', '1 boule moyenne · sauce graine + poisson', 2, ['poisson'], ['energy', 'vita', 'fat', 'fish', 'protein'], ['Banane plantain', 'Graine de palme', 'Poisson'], 'pot-of-food'),
+  M('soir', 'placali_gombo', 'Placali, sauce gombo', '1 petite boule · gombo + poisson fumé', 2, ['poisson'], ['fiber', 'soft', 'fish', 'refined', 'veg'], ['Placali', 'Gombo', 'Poisson séché'], 'pot-of-food'),
+  M('bienetre', 'gnamankoudji', 'Gnamankoudji', '1 petit verre · jus de gingembre peu sucré', 1, [], ['drink', 'appetite', 'refresh'], ['Gingembre', 'Citron'], 'cup-with-straw'),
+  // Sénégal
+  M('midi', 'thieb', 'Thiéboudienne', 'Riz au poisson · ½ légumes, ¼ riz, ¼ poisson, peu d’huile', 2, ['poisson'], ['protein', 'fish', 'veg', 'refined', 'fat'], ['Riz', 'Poisson', 'Carottes, chou, aubergines', 'Tomates'], 'shallow-pan-of-food'),
+  M('midi', 'mafe', 'Mafé', 'Sauce arachide + viande ou poisson, légumes · ¼ riz', 2, ['arachide'], ['protein', 'energy', 'fat', 'refined', 'meat'], ['Riz', "Pâte d'arachide", 'Viande de bœuf', 'Tomates'], 'curry-rice'),
+  M('midi', 'yassa', 'Yassa poulet', 'Poulet mariné au citron et aux oignons · ¼ riz', 3, [], ['protein', 'meat', 'vitc', 'refined'], ['Poulet', 'Oignons', 'Citron', 'Riz'], 'shallow-pan-of-food'),
+  M('midi', 'soupou_kandia', 'Soupou kandia', 'Sauce gombo + poisson · ¼ riz, peu d’huile de palme', 2, ['poisson'], ['fiber', 'fish', 'veg', 'fat', 'refined'], ['Gombo', 'Poisson', 'Riz'], 'pot-of-food'),
+  // Mali
+  M('midi', 'djouka', 'Djouka', 'Fonio à la pâte d’arachide · 1 assiette', 2, ['arachide'], ['lowgi', 'protein', 'energy', 'fiber'], ['Fonio', "Pâte d'arachide"], 'shallow-pan-of-food'),
+  // Bénin et Togo
+  M('midi', 'pate_mais', 'Pâte de maïs, sauce légumes + poisson', '1 boule · sauce légumes bien garnie', 1, ['poisson'], ['fiber', 'veg', 'fish', 'protein'], ['Farine de maïs', 'Poisson', 'Tomates', 'Feuilles'], 'pot-of-food'),
+  M('midi', 'amiwo', 'Amiwo + poulet', 'Pâte rouge de maïs à la tomate · poulet braisé', 3, [], ['energy', 'protein', 'meat', 'refined'], ['Farine de maïs', 'Tomates', 'Poulet'], 'shallow-pan-of-food'),
+  M('midi', 'watche', 'Riz-haricot (watché)', 'Riz et haricot cuits ensemble · sauce tomate · 1 œuf', 1, ['oeuf'], ['protein', 'fiber', 'iron', 'refined'], ['Riz', 'Haricot', 'Tomates', 'Œufs'], 'curry-rice'),
+  M('collation', 'akpan', 'Akpan', '1 verre · yaourt de maïs, peu sucré', 1, ['lait'], ['calcium', 'energy', 'soft'], ['Farine de maïs', 'Lait en poudre'], 'glass-of-milk'),
+  // Niger
+  M('midi', 'dambou', 'Dambou', 'Couscous de mil aux feuilles de moringa · 1 assiette', 1, [], ['iron', 'folate', 'vita', 'veg', 'lowgi', 'fiber'], ['Couscous de mil', 'Feuilles', 'Oignons'], 'herb'),
+  M('soir', 'tuwo_kuka', 'Tuwo, sauce kuka', 'Pâte de mil · sauce feuilles de baobab', 1, [], ['iron', 'calcium', 'folate', 'lowgi', 'veg'], ['Farine de mil', 'Feuilles de baobab', 'Tomates'], 'pot-of-food'),
+  M('collation', 'fura', 'Fura', '1 bol · boules de mil au lait caillé, peu sucré', 1, ['lait'], ['energy', 'calcium', 'protein', 'soft'], ['Farine de mil', 'Lait caillé'], 'bowl-with-spoon'),
+  M('soir', 'kopto', 'Kopto', 'Salade de moringa, oignon, tomate, arachide pilée', 1, ['arachide'], ['iron', 'folate', 'vita', 'veg', 'protein'], ['Feuilles', 'Tomates', 'Oignons', 'Arachides'], 'green-salad')
+);
+
+// Petites fiches : ce que c'est, temps de préparation, pays où le plat est courant, nom local
+// c absent = plat courant partout ; local = nom selon le pays
+export const DETAILS = {
+  b_mil_arachide: { d: 'La bouillie du matin des familles sahéliennes, enrichie : douce, crémeuse et nourrissante.', min: 15, local: { sn: 'Bouillie de mil (fondé) enrichie', ne: 'Koko enrichi', bf: 'Bouillie de mil enrichie' } },
+  b_mil_nature: { d: 'Bouillie légère et acidulée, sans sucre : parfaite quand on a peu d’appétit le matin.', min: 15 },
+  b_mais_poisson: { d: 'Bouillie de maïs relevée de poudre de poisson séché : un concentré de protéines et de calcium.', min: 15 },
+  haricot_gari: { d: 'Haricot fondant saupoudré de gari (semoule de manioc) : rassasiant et sans gluten.', min: 50, c: ['bj', 'tg', 'ci', 'ne', 'bf', 'gn'], local: { bj: 'Abobo + gari', tg: 'Abobo + gari' } },
+  haricot_pain: { d: 'Le petit-déjeuner de rue : haricot mijoté à la tomate et aux oignons, servi dans du pain.', min: 50, c: ['sn', 'bf', 'ml', 'ne', 'ci', 'gn'], local: { sn: 'Ndambé', bf: 'Pain-haricot', ml: 'Pain-haricot' } },
+  patate_oeuf: { d: 'Patate douce fondante et œuf dur : un duo simple, riche en vitamine A et en protéines.', min: 25 },
+  omelette_pain: { d: 'L’omelette des tabliers du matin, version garnie de légumes et peu d’huile.', min: 10 },
+  fonio_lait: { d: 'Le fonio, petite céréale ancestrale, cuit en bouillie au lait : léger et digeste.', min: 15, c: ['ml', 'gn', 'bf', 'sn', 'ci'] },
+  yaourt_fruit: { d: 'Yaourt nature, fruit frais et arachides : un petit-déjeuner frais et vite prêt.', min: 3 },
+  mais_bouilli: { d: 'Épi de maïs bouilli et arachides : le petit-déjeuner de saison, quand le maïs frais arrive.', min: 20 },
+  mangue: { d: 'Le fruit roi de la saison chaude : sucré, parfumé, plein de vitamines A et C.', min: 1 },
+  orange: { d: 'L’orange en quartiers garde ses fibres : plus rassasiante qu’un jus.', min: 1 },
+  goyave: { d: 'La goyave contient plus de vitamine C qu’une orange : un bouclier pour tes défenses.', min: 1 },
+  banane: { d: 'Facile à emporter, douce pour l’estomac : de l’énergie en deux minutes.', min: 1 },
+  arachides: { d: 'Une petite poignée grillée à sec : bonnes graisses et protéines pour tenir jusqu’à midi.', min: 5 },
+  bouye: { d: 'Le jus de pain de singe, fruit du baobab : acidulé, riche en vitamine C et en calcium.', min: 10, c: ['sn', 'ml', 'bf', 'ne', 'gn'], local: { ml: 'Jus de sira (pain de singe)' } },
+  papaye: { d: 'Fruit tendre et doux, ami de la digestion.', min: 2 },
+  yaourt: { d: 'Un yaourt nature : calcium et protéines sans sucre ajouté.', min: 1 },
+  crudites: { d: 'Bâtonnets croquants à grignoter : fibres et fraîcheur, presque sans calories.', min: 5 },
+  riz_feuilles_poisson: { d: 'Riz accompagné d’une sauce de feuilles vertes (oseille, baobab ou manioc) et de poisson : un plat complet riche en fer.', min: 45, local: { gn: 'Riz sauce feuille', sn: 'Riz sauce feuilles (mbuum)' } },
+  to_baobab_poisson: { d: 'Le tô, pâte de mil ou de sorgho, avec une sauce gluante aux feuilles de baobab : le plat du soir et du midi au Sahel.', min: 45, c: ['bf', 'ml', 'ne'], local: { ne: 'Tuwo, sauce kuka au poisson' } },
+  benga_legumes: { d: 'Haricot rouge ou blanc mijoté avec légumes et feuilles, un peu de gari : économique et rassasiant.', min: 50, local: { bf: 'Benga aux légumes', ci: 'Benga aux légumes' } },
+  riz_gras_poulet: { d: 'Le riz cuit dans sa sauce tomate avec poulet et légumes : le plat de fête, en version moins grasse.', min: 50, local: { ml: 'Zamè (riz gras) au poulet', bj: 'Riz au gras + poulet', tg: 'Riz au gras + poulet' } },
+  attieke_poisson: { d: 'Semoule de manioc fermentée, poisson braisé et crudités : frais, léger et vite prêt.', min: 25, c: ['ci', 'bf', 'bj', 'tg', 'ml'] },
+  riz_arachide: { d: 'Sauce onctueuse à la pâte d’arachide et aux feuilles, avec un peu de riz.', min: 45, local: { ml: 'Tigadèguèna + riz', sn: 'Mafé aux feuilles', bf: 'Riz sauce arachide' } },
+  to_gombo_oeuf: { d: 'Tô de maïs avec une sauce gombo filante au soumbala et un œuf : simple et complet.', min: 40, c: ['bf', 'ml', 'ne', 'bj', 'tg'] },
+  couscous_niebe: { d: 'Couscous de mil cuit à la vapeur, sauce légumes et haricot : le duo céréale + légumineuse parfait.', min: 45, c: ['sn', 'ml', 'bf', 'ne'], local: { sn: 'Thiéré, sauce légumes + haricot' } },
+  fonio_legumes_poisson: { d: 'Le fonio aux légumes sautés et au poisson : un plat léger qui fait monter le sucre doucement.', min: 30, c: ['ml', 'gn', 'bf', 'sn', 'ci'] },
+  igname_viande: { d: 'Morceaux d’igname mijotés avec légumes et viande maigre : réconfortant et nourrissant.', min: 50, c: ['ci', 'bj', 'tg', 'gn'] },
+  riz_tomate_crevettes: { d: 'Riz sauce tomate relevé de crevettes séchées : beaucoup de goût avec peu d’ingrédients.', min: 35, c: ['bj', 'tg', 'ci', 'sn', 'gn'] },
+  riz_legumes_niebe: { d: 'Riz aux légumes et au haricot : un riz gras végétal, complet en protéines.', min: 45 },
+  to_gombo_soumbala: { d: 'Tô de maïs et sauce gombo au soumbala, sans cube : léger pour le soir.', min: 40, c: ['bf', 'ml', 'ne', 'bj', 'tg'], local: { bj: 'Pâte de maïs, sauce gombo', tg: 'Akoumé, sauce gombo' } },
+  soupe_legumes_to: { d: 'Bol de soupe de légumes avec une demi-boule de tô : chaud, léger, idéal avant de dormir.', min: 35 },
+  patate_feuilles: { d: 'Patate douce et sauce aux feuilles vertes : vitamines A et fer dans une seule assiette.', min: 35 },
+  haricot_leger: { d: 'Haricot mijoté avec tomate et oignon, peu d’huile : protéines pour la nuit, sans lourdeur.', min: 50 },
+  spaghetti_oeuf: { d: 'Spaghetti sautés aux légumes et à l’œuf : le plat rapide des soirs pressés.', min: 20 },
+  couscous_legumes: { d: 'Couscous de mil vapeur et sauce légumes : léger, riche en fibres.', min: 40, c: ['sn', 'ml', 'bf', 'ne'], local: { sn: 'Thiéré, sauce légumes' } },
+  soupe_poisson: { d: 'Soupe claire de poisson et légumes : se digère facilement, réchauffe le soir.', min: 30 },
+  bouillie_soir: { d: 'Petite bouillie de mil au lait : douce pour l’estomac quand on n’a pas faim le soir.', min: 15 },
+  salade_oeuf: { d: 'Salade fraîche, œuf dur et avocat : bonnes graisses et protéines, tout en légèreté.', min: 15 },
+  fonio_sauce_feuilles: { d: 'Fonio vapeur et sauce feuilles : céréale légère et feuilles riches en fer.', min: 30, c: ['ml', 'gn', 'bf', 'sn'] },
+  salade_fruits: { d: 'Trois fruits de saison coupés, un filet de citron : le dessert vitaminé.', min: 10 },
+  degue: { d: 'Granulés de mil au lait caillé, frais et légèrement acidulés : le dessert du Sahel.', min: 10, c: ['bf', 'ml', 'ci', 'sn', 'ne'], local: { sn: 'Thiakry', ne: 'Dégué' } },
+  papaye_citron: { d: 'Papaye bien mûre relevée de citron : douce pour la digestion après le repas.', min: 3 },
+  yaourt_mangue: { d: 'Yaourt nature et mangue fraîche : calcium et vitamines en dessert.', min: 3 },
+  banane_arachide: { d: 'Banane et pâte d’arachide : un dessert gourmand qui redonne de l’énergie.', min: 2 },
+  orange_dessert: { d: 'Une orange bien fraîche après le repas : la vitamine C aide à absorber le fer du plat.', min: 2 },
+  goyave_dessert: { d: 'La goyave après le repas : vitamine C et fibres, peu sucrée.', min: 1 },
+  bissap: { d: 'Infusion de fleurs d’hibiscus rouge, servie fraîche : acidulée et désaltérante.', min: 15, c: ['sn', 'bf', 'ml', 'ne', 'ci', 'gn', 'bj', 'tg'], local: { ml: 'Dabileni (bissap)', bf: 'Bissap (jus d’oseille)', ci: 'Bissap', bj: 'Jus de bissap', tg: 'Jus de bissap' } },
+  gingembre: { d: 'Gingembre râpé et citron dans l’eau tiède : réveille les papilles avant le dîner.', min: 7 },
+  citronnelle: { d: 'Infusion de citronnelle du jardin : parfumée et apaisante le soir.', min: 7 },
+  kinkeliba: { d: 'La tisane traditionnelle du Sénégal et du Mali, à l’amertume douce.', min: 12, c: ['sn', 'ml', 'bf', 'gn', 'ne'] },
+  eau_citron: { d: 'Le plus simple des rafraîchissements : de l’eau, du citron, de la menthe.', min: 2 },
+  bouye_eau: { d: 'Pain de singe délayé dans l’eau : vitamine C et calcium, sans lait.', min: 5, c: ['sn', 'ml', 'bf', 'ne', 'gn'] },
+  babenda: { d: 'Plat traditionnel mooré de feuilles (oseille, haricot) mijotées avec un peu de céréale et du soumbala : un champion du fer.', min: 60, c: ['bf'] },
+  gonre: { d: 'Petits gâteaux de farine de haricot cuits à la vapeur dans des feuilles, avec piment et oignon.', min: 60, c: ['bf'] },
+  zoomkoom: { d: 'La boisson burkinabè à la farine de mil, au gingembre et au citron : rafraîchissante et énergisante.', min: 15, c: ['bf'] },
+  garba: { d: 'Le plat de rue ivoirien : attiéké et thon. Choisis le poisson braisé et peu d’huile.', min: 15, c: ['ci'] },
+  kedjenou: { d: 'Poulet cuit à l’étouffée dans sa canari avec légumes et épices : presque sans huile, plein de saveur.', min: 60, c: ['ci'] },
+  foutou_graine: { d: 'Foutou de banane plantain pilée et sauce graine (noix de palme) : riche, à garder pour midi.', min: 75, c: ['ci'] },
+  placali_gombo: { d: 'Pâte de manioc fermenté et sauce gombo au poisson fumé : léger et facile à digérer.', min: 40, c: ['ci'] },
+  gnamankoudji: { d: 'Jus de gingembre frais pressé, un classique ivoirien qui réveille l’appétit.', min: 15, c: ['ci'] },
+  thieb: { d: 'Le plat national sénégalais : riz au poisson et aux légumes, cuit dans une sauce tomate.', min: 90, c: ['sn'] },
+  mafe: { d: 'Ragoût à la sauce d’arachide, avec viande ou poisson et légumes, servi avec un peu de riz.', min: 75, c: ['sn', 'ml', 'gn'], local: { ml: 'Tigadèguèna', gn: 'Mafé' } },
+  yassa: { d: 'Poulet mariné au citron et aux oignons fondants : acidulé, parfumé, léger en huile.', min: 60, c: ['sn'] },
+  soupou_kandia: { d: 'Sauce gombo filante au poisson, servie avec du riz : plat casamançais riche en fibres.', min: 60, c: ['sn'] },
+  djouka: { d: 'Fonio cuit à la vapeur mélangé à la pâte d’arachide : spécialité malienne nourrissante.', min: 30, c: ['ml'] },
+  pate_mais: { d: 'La pâte de maïs du sud, avec une sauce légumes et du poisson : le repas de tous les jours.', min: 40, c: ['bj', 'tg'], local: { bj: 'Wɔ (pâte de maïs), sauce légumes', tg: 'Akoumé, sauce légumes' } },
+  amiwo: { d: 'Pâte de maïs rouge cuite dans une sauce tomate épicée, servie avec du poulet.', min: 50, c: ['bj', 'tg'] },
+  watche: { d: 'Riz et haricot cuits ensemble, sauce tomate et œuf : le plat de rue complet en protéines.', min: 50, c: ['bj', 'tg'], local: { bj: 'Watché', tg: 'Ayimolou' } },
+  akpan: { d: 'Yaourt de maïs fermenté, servi frais : doux pour l’estomac et rafraîchissant.', min: 5, c: ['bj', 'tg'] },
+  dambou: { d: 'Couscous de mil (ou de riz) aux feuilles de moringa : la spécialité nigérienne riche en fer et en vitamines.', min: 40, c: ['ne'] },
+  tuwo_kuka: { d: 'Pâte de mil et sauce aux feuilles de baobab (kuka) : le classique du soir au Niger.', min: 45, c: ['ne'] },
+  fura: { d: 'Boules de mil épicées délayées dans le lait caillé : boisson-repas nourrissante.', min: 10, c: ['ne'] },
+  kopto: { d: 'Salade tiède de feuilles de moringa, tomate, oignon et arachide pilée : un concentré de fer.', min: 20, c: ['ne'] }
+};
+
+Object.assign(HOW, {
+  babenda: ['Lave et hache les feuilles (oseille, feuilles de haricot).', 'Fais-les cuire avec un peu de farine de mil ou de riz et du haricot.', 'Ajoute du soumbala, pas de cube. Laisse mijoter 30 minutes.'],
+  gonre: ['Mélange la farine de haricot avec oignon et piment écrasés.', 'Emballe en petits paquets dans des feuilles.', 'Cuis à la vapeur 45 minutes.'],
+  zoomkoom: ['Délaye la farine de mil dans de l’eau fraîche.', 'Ajoute gingembre râpé et jus de citron.', 'Filtre, sucre très peu et sers frais.'],
+  garba: ['Braise le thon (plutôt que de le frire).', 'Coupe tomate, oignon et piment.', 'Réchauffe l’attiéké à la vapeur et assemble.'],
+  kedjenou: ['Mets le poulet coupé, les légumes et les épices dans une marmite fermée.', 'Ne rajoute presque pas d’huile ni d’eau.', 'Cuis 45 minutes à feu doux en secouant la marmite de temps en temps.'],
+  foutou_graine: ['Fais bouillir puis pile la banane plantain pour faire le foutou.', 'Prépare la sauce graine avec le poisson.', 'Retire l’huile rouge qui remonte à la surface avant de servir.'],
+  placali_gombo: ['Cuis la pâte de manioc en remuant jusqu’à ce qu’elle soit lisse.', 'Prépare la sauce gombo avec le poisson fumé.'],
+  gnamankoudji: ['Râpe le gingembre et laisse tremper dans l’eau 10 minutes.', 'Filtre, ajoute citron et très peu de sucre.'],
+  thieb: ['Fais revenir le poisson farci au persil (rof) dans un peu d’huile.', 'Ajoute la tomate, les légumes et l’eau, cuis 30 minutes.', 'Retire légumes et poisson, cuis le riz dans le bouillon.'],
+  mafe: ['Fais revenir la viande avec oignon et tomate.', 'Ajoute la pâte d’arachide délayée et les légumes.', 'Laisse mijoter 45 minutes, sans ajouter d’huile.'],
+  yassa: ['Fais mariner le poulet dans le citron, les oignons et la moutarde.', 'Braise le poulet.', 'Fais fondre les oignons de la marinade et nappe le poulet.'],
+  soupou_kandia: ['Coupe le gombo en rondelles.', 'Cuis-le avec le poisson et un peu d’huile de palme.', 'Sers avec un quart d’assiette de riz.'],
+  djouka: ['Cuis le fonio à la vapeur.', 'Délaye la pâte d’arachide avec un peu d’eau chaude et sel.', 'Mélange au fonio.'],
+  pate_mais: ['Verse la farine de maïs dans l’eau bouillante en remuant fort.', 'Prépare une sauce légumes et poisson.', 'Sers la pâte en boule avec la sauce.'],
+  amiwo: ['Prépare une sauce tomate épicée.', 'Verse la farine de maïs dans la sauce en remuant.', 'Sers avec le poulet braisé.'],
+  watche: ['Cuis le haricot à moitié.', 'Ajoute le riz et l’eau, cuis ensemble.', 'Sers avec une sauce tomate et un œuf.'],
+  akpan: ['Délaye la pâte de maïs fermentée dans l’eau fraîche.', 'Ajoute un peu de lait, très peu de sucre.'],
+  dambou: ['Lave et hache les feuilles de moringa.', 'Mélange au couscous de mil avec oignon.', 'Cuis à la vapeur 20 minutes.'],
+  tuwo_kuka: ['Prépare la pâte de mil.', 'Fais une sauce tomate et ajoute la poudre de feuilles de baobab (kuka).'],
+  fura: ['Écrase les boules de fura dans le lait caillé.', 'Sucre très peu, sers frais.'],
+  kopto: ['Fais blanchir les feuilles de moringa 5 minutes.', 'Égoutte, ajoute oignon, tomate et arachide pilée.']
+});
+PANTRY.push('Banane plantain', 'Placali', 'Feuilles de baobab', 'Graine de palme');
+
+export function seasonForZone(zone, month) {
+  if (zone === 'cote') {
+    if (month >= 3 && month <= 6) return ['Mangue', 'Ananas', 'Avocat', 'Gombo', 'Aubergine', 'Feuilles', 'Banane plantain', 'Tomate'];
+    if (month >= 7 && month <= 10) return ['Maïs frais', 'Igname nouvelle', 'Arachide', 'Haricot', 'Orange', 'Papaye', 'Feuilles', 'Piment'];
+    return ['Orange', 'Mandarine', 'Igname', 'Manioc', 'Tomate', 'Chou', 'Carotte', 'Avocat'];
+  }
+  return seasonFor(month);
+}

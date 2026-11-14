@@ -1,6 +1,7 @@
 import { SHARED_DEFS } from './art.js';
-import { SLOT_ORDER, MAIN_SLOTS, SLOT_INFO, NUTRIENTS, TAG_BENEFIT, DISHES, CHAT_CHIPS, DAY_THEMES, PAYMENTS, APPETITE_TIPS } from './content.js';
-import { assess, planDay, missionFor, tipsFor, shopping, cookWith, slotNow } from './engine.js';
+import { SLOT_ORDER, MAIN_SLOTS, SLOT_INFO, NUTRIENTS, TAG_BENEFIT, DISHES, CHAT_CHIPS, DAY_THEMES, COUNTRIES, OPERATORS, APPETITE_TIPS } from './content.js';
+import { assess, planDay, missionFor, tipsFor, shopping, cookWith, slotNow, wheelItems } from './engine.js';
+import { now, setTZ, hhmm } from './time.js';
 import { CONFIG } from './config.js';
 import { load, save, wipe, fresh, enqueue, flush } from './store.js';
 import { makeApi } from './api.js';
@@ -11,15 +12,34 @@ import * as V from './views.js';
 let S = load();
 let api = makeApi(S.deviceId);
 sfx.setEnabled(S.sound);
+if (!S.picks) S.picks = {};
+const countryOf = (id = S.profile.country) => COUNTRIES.find((c) => c.id === id) || null;
+const applyTZ = () => setTZ((countryOf() || {}).tz || null);
+applyTZ();
+// Moyens de paiement du pays choisi (+ carte)
+function payMethods() {
+  const c = countryOf(), ops = c ? c.ops : ['orange', 'moov'];
+  return ops.map((id) => Object.assign({ id, phone: true, dial: c ? c.dial : '+226', len: c ? c.len : 8 }, OPERATORS[id]))
+    .concat([{ id: 'card', label: 'Carte bancaire', logo: null, icon: 'credit-card', color: '#F2F3F2', phone: false }]);
+}
+// Prépare le brouillon du bilan : un nouveau profil doit répondre lui-même aux questions obligatoires
+function draftFrom(p) {
+  const d = clone(p);
+  d.answered = Object.assign({}, d.answered || {});
+  if (p.assessedAt) d.answered = Object.assign({ health: true, allergies: true, preg: true, goal: true }, d.answered);
+  else d.goal = d.goal && d.answered.goal ? d.goal : null;
+  return d;
+}
 const needsBilan = S.onboarded && !S.profile.assessedAt;
 const U = {
   screen: S.onboarded ? (needsBilan ? 'setup' : 'home') : 'onb',
   enter: true, onbStep: 0, setupStep: 0, editing: needsBilan, loading: false,
-  draft: needsBilan ? clone(S.profile) : null, firstBilan: false,
+  draft: needsBilan ? draftFrom(S.profile) : null, firstBilan: false, countryOnly: false,
   planOffset: 0, open: null, nutOpen: false,
   cookTab: 'have', have: [], dish: 'rizgras', checked: {},
   chatDraft: '', typing: false,
-  offerPlan: (S.trial && S.trial.plan) || 'mois', pay: S.pay.method || 'orange', phone: S.pay.phone || '',
+  offerPlan: (S.trial && S.trial.plan) || 'mois', pay: S.pay.method || null, phone: '',
+  wheel: { slot: null, time: 30, spins: 0, result: null, rot: 0, spinning: false, msg: null },
   showCode: false, code: '', info: null
 };
 let installEvt = null;
@@ -28,9 +48,9 @@ function clone(o) { return JSON.parse(JSON.stringify(o)); }
 /* ---------- Dates ---------- */
 const pad = (n) => String(n).padStart(2, '0');
 const dayKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-function dateAt(off) { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + off); return d; }
-const nowHM = () => { const d = new Date(); return d.getHours() + ':' + pad(d.getMinutes()); };
-function weekKey(d = new Date()) { const x = new Date(d); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return dayKey(x); }
+function dateAt(off) { const d = now(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + off); return d; }
+const nowHM = () => { const d = now(); return d.getHours() + ':' + pad(d.getMinutes()); };
+function weekKey(d = now()) { const x = new Date(d); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return dayKey(x); }
 const toMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -43,7 +63,7 @@ function analysis() {
 }
 function streak() {
   const active = (k) => MAIN_SLOTS.filter((s) => (S.meals[k] || {})[s]).length >= 2;
-  let n = 0; const d = new Date();
+  let n = 0; const d = now();
   if (!active(dayKey(d))) d.setDate(d.getDate() - 1);
   while (active(dayKey(d)) && n < 999) { n++; d.setDate(d.getDate() - 1); }
   return n;
@@ -57,17 +77,18 @@ function computed() {
   const day = (off) => {
     if (dayCache[off]) return dayCache[off];
     const d = dateAt(off), k = dayKey(d), logs = S.meals[k] || {};
-    return (dayCache[off] = planDay(d, S.profile, A, S.swaps, k).map((m) => Object.assign({}, m, { takenAt: logs[m.slot] || null })));
+    return (dayCache[off] = planDay(d, S.profile, A, S.swaps, k, S.picks).map((m) => Object.assign({}, m, { takenAt: logs[m.slot] || null })));
   };
   return {
-    A, isPlus, dateAt, day,
+    A, isPlus, dateAt, day, now: now(), slotNow: slotNow(), country: countryOf(), payMethods: payMethods(),
+    wheel: (slot, maxMin) => wheelItems(slot, S.profile, A, dateAt(0), maxMin),
     hoursLeft: isPlus ? Math.max(1, Math.ceil((end - Date.now()) / 3600000)) : 0,
     trialUsed: !!(t && (t.cancelledAt || Date.now() >= end)),
     orgName: S.orgName || null,
     canInstall: !!installEvt,
     hasAppetite: A.priorities.concat(A.watch).some((x) => x.id === 'appetit'),
     theme: (off) => DAY_THEMES[dateAt(off).getDay()],
-    waterToday: () => S.water[dayKey(new Date())] || 0,
+    waterToday: () => S.water[dayKey(now())] || 0,
     improvesThisWeek() { const lim = Date.now() - 7 * 86400000; return S.improvements.filter((x) => new Date(x.at).getTime() > lim).length; },
     cookWith: (have) => cookWith(have, S.profile, A),
     shopping: (n) => shopping([...Array(n)].map((_, i) => day(i))),
@@ -77,7 +98,7 @@ function computed() {
       const today = day(0), nowSlot = slotNow();
       const m = today.slice(SLOT_ORDER.indexOf(nowSlot)).find((x) => !x.takenAt) || null;
       if (!m) return null;
-      const n = new Date(), mins = toMin(SLOT_INFO[m.slot].time) - (n.getHours() * 60 + n.getMinutes());
+      const n = now(), mins = toMin(SLOT_INFO[m.slot].time) - (n.getHours() * 60 + n.getMinutes());
       const isNow = m.slot === nowSlot || mins <= 20;
       const when = isNow ? 'C’est le moment' : mins >= 60 ? `Dans ${Math.floor(mins / 60)} h ${mins % 60 ? pad(mins % 60) : ''}`.trim() : `Dans ${mins} min`;
       const gives = m.tags.filter((tg) => TAG_BENEFIT[tg]).sort((a, b) => (A.weights[b] || 0) - (A.weights[a] || 0)).slice(0, 3).map((tg) => TAG_BENEFIT[tg]);
@@ -98,7 +119,7 @@ function computed() {
     mission() {
       const m = missionFor(A), wk = weekKey();
       const rec = S.missions[wk] && S.missions[wk].id === m.id ? S.missions[wk] : { id: m.id, days: [] };
-      return Object.assign({}, m, { done: rec.days.length, today: rec.days.includes(dayKey(new Date())) });
+      return Object.assign({}, m, { done: rec.days.length, today: rec.days.includes(dayKey(now())) });
     }
   };
 }
@@ -107,7 +128,7 @@ function computed() {
 const root = document.getElementById('app');
 const scroller = () => root.querySelector('.scroll');
 const TAB_SCREENS = ['home', 'plan', 'cook', 'market', 'profile'];
-const VIEWS = { onb: V.onboarding, setup: V.setup, bilan: V.bilan, home: V.home, plan: V.plan, cook: V.cook, market: V.market, chat: V.chat, profile: V.profile, offers: V.offers };
+const VIEWS = { wheel: V.wheel, onb: V.onboarding, setup: V.setup, bilan: V.bilan, home: V.home, plan: V.plan, cook: V.cook, market: V.market, chat: V.chat, profile: V.profile, offers: V.offers };
 function render(keepScroll = true) {
   const C = computed(), prev = scroller();
   const top = keepScroll && !U.enter && prev ? prev.scrollTop : 0;
@@ -191,37 +212,45 @@ const ACT = {
   onbNext() { sfx.tap(); if (U.onbStep < 2) { U.onbStep++; U.enter = true; render(false); } else ACT.onbSkip(); },
   onbPrev() { sfx.tap(); U.onbStep = Math.max(0, U.onbStep - 1); U.enter = true; render(false); },
   onbGo(a) { sfx.tap(); U.onbStep = +a; U.enter = true; render(false); },
-  onbSkip() { U.draft = clone(S.profile); U.setupStep = 0; U.editing = false; go('setup'); },
+  onbSkip() { U.draft = draftFrom(S.profile); U.setupStep = 0; U.editing = false; go('setup'); },
   setSex(a) { U.draft.sex = a; if (a === 'm') U.draft.pregnancy = 'non'; sfx.tick(); render(); },
   setAge(a) { setD('age', a); },
   setActivity(a) { setD('activity', a); },
-  setGoal(a) { setD('goal', a); },
-  toggleCond(a) { setD('conditions', toggleIn(U.draft.conditions, a)); },
-  noCond() { setD('conditions', []); },
-  setPreg(a) { setD('pregnancy', a); },
-  toggleAllergy(a) { setD('allergies', toggleIn(U.draft.allergies, a)); },
-  noAllergy() { setD('allergies', []); },
+  setCountry(a) { setD('country', a); },
+  setGoal(a) { U.draft.answered.goal = true; setD('goal', a); },
+  toggleCond(a) { U.draft.answered.health = true; setD('conditions', toggleIn(U.draft.conditions, a)); },
+  noCond() { U.draft.answered.health = true; setD('conditions', []); },
+  setPreg(a) { U.draft.answered.preg = true; setD('pregnancy', a); },
+  toggleAllergy(a) { U.draft.answered.allergies = true; setD('allergies', toggleIn(U.draft.allergies, a)); },
+  noAllergy() { U.draft.answered.allergies = true; setD('allergies', []); },
+  skipStep() { sfx.tap(); if (U.setupStep < V.SETUP_STEPS - 1) { U.setupStep++; U.enter = true; render(false); } else ACT.setupNext(); },
+  askCountry() { U.draft = draftFrom(S.profile); U.setupStep = 1; U.editing = true; U.countryOnly = true; go('setup'); },
   setDiet(a) { setD('diet', a); },
   setHabit(a) { const [k, v] = a.split(':'); U.draft.habits = Object.assign({}, U.draft.habits, { [k]: v }); sfx.tick(); render(); },
-  setupBack() { sfx.tap(); if (U.setupStep > 0) { U.setupStep--; U.enter = true; render(false); } else go(U.editing && S.profile.assessedAt ? 'profile' : 'onb'); },
+  setupBack() { sfx.tap(); if (U.countryOnly) { U.countryOnly = false; go(S.profile.assessedAt ? 'home' : 'onb'); return; } if (U.setupStep > 0) { U.setupStep--; U.enter = true; render(false); } else go(U.editing && S.profile.assessedAt ? 'profile' : 'onb'); },
   setupNext() {
     const d = U.draft, st = U.setupStep;
-    if ((st === 0 && !d.name.trim()) || (st === 1 && (!d.sex || !d.age))) { sfx.error(); toast(st === 0 ? 'Écris ton prénom pour continuer.' : 'Choisis ton sexe et ton âge pour continuer.'); return; }
+    const miss = V.missingAnswer(st, d);
+    if (miss) { sfx.error(); toast(miss); return; }
     sfx.tap();
+    if (U.countryOnly) {
+      S.profile = Object.assign({}, S.profile, { country: d.country }); applyTZ(); U.countryOnly = false; U.editing = false; U.pay = null;
+      enqueue(S, { t: 'profile' }); persist(); sync(); go('home'); celebrate(); toast('Ton menu et ton heure suivent maintenant : ' + countryOf().label + '.'); return;
+    }
     if (st < V.SETUP_STEPS - 1) { U.setupStep++; U.enter = true; render(false); return; }
     d.name = d.name.trim().slice(0, 40);
     d.weight = d.weight ? Number(d.weight) : null; d.height = d.height ? Number(d.height) : null;
     d.assessedAt = new Date().toISOString();
     const wasAssessed = !!S.profile.assessedAt;
-    S.profile = Object.assign({}, S.profile, d);
+    S.profile = Object.assign({}, S.profile, d); applyTZ(); U.pay = null;
     S.swaps = {}; enqueue(S, { t: 'profile' });
     U.loading = true; render(false);
     setTimeout(() => { S.onboarded = true; U.loading = false; U.editing = false; U.firstBilan = !wasAssessed; persist(); sync(); go('bilan'); celebrate(true); }, 2300);
   },
   bilanDone() { const first = U.firstBilan; U.firstBilan = false; go('home'); if (first) toast('Voici ta journée idéale, ' + S.profile.name + ' !'); },
-  editProfile() { U.draft = clone(S.profile); U.setupStep = 0; U.editing = true; go('setup'); },
+  editProfile() { U.draft = draftFrom(S.profile); U.setupStep = 0; U.editing = true; go('setup'); },
   eat(slot) {
-    const k = dayKey(new Date()), logs = Object.assign({}, S.meals[k] || {});
+    const k = dayKey(now()), logs = Object.assign({}, S.meals[k] || {});
     if (logs[slot]) { delete logs[slot]; enqueue(S, { t: 'unmeal', day: k, key: slot }); sfx.toggle(false); }
     else {
       logs[slot] = nowHM(); enqueue(S, { t: 'meal', day: k, key: slot, at: new Date().toISOString() });
@@ -237,7 +266,7 @@ const ACT = {
   swap(k) {
     const [off, slot] = k.split(':');
     if (!computed().isPlus) {
-      const today = dayKey(new Date());
+      const today = dayKey(now());
       S.swapUse = S.swapUse && S.swapUse.day === today ? S.swapUse : { day: today, n: 0 };
       if (S.swapUse.n >= 1) { sfx.error(); toast('Une autre idée par jour en gratuit. Avec Plus, change autant que tu veux.'); return; }
       S.swapUse.n++;
@@ -248,14 +277,14 @@ const ACT = {
     toast('Nouvelle idée : ' + m.name + '.');
   },
   waterPlus() {
-    const k = dayKey(new Date()), goal = analysis().glasses, before = S.water[k] || 0, w = Math.min(goal + 4, before + 1);
+    const k = dayKey(now()), goal = analysis().glasses, before = S.water[k] || 0, w = Math.min(goal + 4, before + 1);
     S.water[k] = w; enqueue(S, { t: 'water', day: k, glasses: w }); sfx.water();
     if (w === goal) { celebrate(true); toast("Objectif d'eau atteint : " + goal + ' verres !'); }
     persist(); render(); sync();
   },
-  waterMinus() { const k = dayKey(new Date()), w = Math.max(0, (S.water[k] || 0) - 1); S.water[k] = w; enqueue(S, { t: 'water', day: k, glasses: w }); sfx.tap(); persist(); render(); sync(); },
+  waterMinus() { const k = dayKey(now()), w = Math.max(0, (S.water[k] || 0) - 1); S.water[k] = w; enqueue(S, { t: 'water', day: k, glasses: w }); sfx.tap(); persist(); render(); sync(); },
   missionDone() {
-    const m = computed().mission(), wk = weekKey(), today = dayKey(new Date());
+    const m = computed().mission(), wk = weekKey(), today = dayKey(now());
     const rec = S.missions[wk] && S.missions[wk].id === m.id ? S.missions[wk] : { id: m.id, days: [] };
     if (!rec.days.includes(today)) rec.days.push(today);
     S.missions = { [wk]: rec }; persist();
@@ -317,18 +346,29 @@ const ACT = {
   wipe() {
     if (!confirm('Effacer toutes tes données de ce téléphone et recommencer ?')) return;
     wipe(); S = fresh(); api = makeApi(S.deviceId); persist();
-    Object.assign(U, { onbStep: 0, setupStep: 0, chatDraft: '', checked: {}, have: [], offerPlan: 'mois', phone: '', code: '', editing: false });
+    Object.assign(U, { onbStep: 0, setupStep: 0, chatDraft: '', checked: {}, have: [], offerPlan: 'mois', phone: '', pay: null, code: '', editing: false, countryOnly: false }); applyTZ();
     go('onb');
   },
   pickPlan(a) { U.offerPlan = a; sfx.tick(); render(); },
   pickPay(a) { U.pay = a; sfx.tick(); render(); },
+  wheelSlot(a) { Object.assign(U.wheel, { slot: a, spins: 0, result: null, msg: null }); U.open = null; sfx.tick(); render(); },
+  wheelTime(a) { Object.assign(U.wheel, { time: +a, spins: 0, result: null, msg: null }); U.open = null; sfx.tick(); render(); },
+  spin() { spinWheel(); },
+  wheelRecipe() { U.open = U.open === 'wheel' ? null : 'wheel'; sfx.tap(); render(); },
+  wheelPick() {
+    const W = U.wheel, m = W.result; if (!m) return;
+    const slot = W.slot || slotNow(), k = dayKey(now()) + ':' + slot;
+    S.picks[k] = m.id; persist();
+    Object.assign(U.wheel, { spins: 0, result: null, msg: null }); go('home'); celebrate();
+    toast(`${m.name} : c'est ton ${SLOT_INFO[slot].label.toLowerCase()} d'aujourd'hui. Bon appétit !`);
+  },
   toggleCode() { U.showCode = !U.showCode; sfx.tap(); render(); },
   async startTrial() {
-    const pay = PAYMENTS.find((x) => x.id === U.pay) || PAYMENTS[0];
+    const pays = payMethods(), pay = pays.find((x) => x.id === U.pay) || pays[0];
     const digits = U.phone.replace(/\D/g, '');
-    if (pay.phone && digits.length !== 8) { sfx.error(); toast('Entre ton numéro ' + pay.label + ' (8 chiffres).'); document.getElementById('pay-phone')?.focus(); return; }
+    if (pay.phone && digits.length !== pay.len) { sfx.error(); toast('Entre ton numéro ' + pay.label + ' (' + pay.len + ' chiffres).'); document.getElementById('pay-phone')?.focus(); return; }
     if (!navigator.onLine) { sfx.error(); toast("Connexion internet nécessaire pour activer l'essai."); return; }
-    S.pay = { method: U.pay, phone: pay.phone ? digits : '' };
+    S.pay = { method: pay.id, phone: pay.phone ? pay.dial + digits : '' };
     try {
       await flush(S, api);
       const r = await api.startTrial(U.offerPlan);
@@ -344,7 +384,7 @@ const ACT = {
     if (S.trial) S.trial.cancelledAt = new Date().toISOString();
     persist(); render(); toast('Essai arrêté. Tu ne paieras rien.');
   },
-  notifyMe() { S.pay = { method: U.pay, phone: U.phone.replace(/\D/g, '') }; enqueue(S, { t: 'pay', method: S.pay.method, phone: S.pay.phone }); persist(); sync(); sfx.success(); toast("C'est noté ! On te prévient dès l'ouverture du paiement."); },
+  notifyMe() { const pm = payMethods().find((x) => x.id === U.pay) || payMethods()[0]; S.pay = { method: pm.id, phone: (pm.dial || '') + U.phone.replace(/\D/g, '') }; enqueue(S, { t: 'pay', method: S.pay.method, phone: S.pay.phone }); persist(); sync(); sfx.success(); toast("C'est noté ! On te prévient dès l'ouverture du paiement."); },
   async invite() {
     sfx.tap();
     const text = 'Je sais enfin quoi manger, et pourquoi, avec Mon Assiette et Kalou. Essaie : ' + location.origin;
@@ -352,6 +392,42 @@ const ACT = {
     window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
   }
 };
+
+/* ---------- La roue ---------- */
+const KALOU_RESPIN = [
+  'D’accord, on relance. Mais ce plat-là était très bien pour toi !',
+  'Encore ? Kalou commence à avoir le tournis…',
+  'Dernière chance : après, on fait confiance à la roue !'
+];
+function spinWheel() {
+  const W = U.wheel; if (W.spinning) return;
+  const C = computed(), slot = W.slot || slotNow();
+  const { items } = C.wheel(slot, W.time === 999 ? 0 : W.time);
+  if (!items.length) return;
+  if (W.spins >= 4) { sfx.error(); toast('La roue a parlé ! Prépare son idée, ou change de moment.'); return; }
+  // Tirage pondéré : plus la case est grande, plus le plat a de chances de sortir
+  let r = Math.random(), idx = 0; for (; idx < items.length - 1; idx++) { r -= items[idx].share; if (r <= 0) break; }
+  const starts = []; let acc = 0; items.forEach((x) => { starts.push(acc); acc += x.share * 360; });
+  const target = starts[idx] + items[idx].share * 360 * (0.2 + Math.random() * 0.6);
+  const from = W.rot, base = ((360 - target - (from % 360)) % 360 + 360) % 360;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const to = from + base + (reduce ? 360 : 360 * 5), T = reduce ? 900 : 4600;
+  W.spinning = true; W.msg = W.spins >= 1 ? KALOU_RESPIN[Math.min(W.spins - 1, 2)] : null; W.result = null; U.open = null;
+  render();
+  const disc = document.getElementById('wheel-disc');
+  const segAt = (deg) => { const a = ((360 - (deg % 360)) % 360 + 360) % 360; let i = 0; while (i < starts.length - 1 && a >= starts[i + 1]) i++; return i; };
+  let last = segAt(from); const t0 = performance.now();
+  const ease = (t) => 1 - Math.pow(1 - t, 4);
+  sfx.swoosh();
+  const frame = (tNow) => {
+    const t = Math.min(1, (tNow - t0) / T), deg = from + (to - from) * ease(t);
+    if (disc) disc.style.transform = `rotate(${deg}deg)`;
+    const seg = segAt(deg); if (seg !== last) { last = seg; sfx.tick(); if (navigator.vibrate && t < 0.9) navigator.vibrate(4); }
+    if (t < 1) requestAnimationFrame(frame);
+    else { W.rot = to % 360; W.spinning = false; W.spins++; W.result = items[idx]; sfx.success(); render(); }
+  };
+  requestAnimationFrame(frame);
+}
 
 async function redeem() {
   const code = U.code.trim();
@@ -369,7 +445,7 @@ root.addEventListener('click', (e) => {
   sfx.unlock();
   const el = e.target.closest('[data-act]'); if (!el || !root.contains(el)) return;
   const act = el.dataset.act;
-  if (el.getAttribute('aria-disabled') === 'true' && !['setupNext', 'startTrial', 'notifyMe'].includes(act)) return;
+  if (el.getAttribute('aria-disabled') === 'true' && !['setupNext', 'startTrial', 'notifyMe', 'spin'].includes(act)) return;
   const fn = ACT[act]; if (!fn) return;
   e.preventDefault();
   fn(el.dataset.arg);
@@ -381,10 +457,11 @@ root.addEventListener('input', (e) => {
   else if (k === 'chatDraft') U.chatDraft = el.value;
   else if (k === 'code') U.code = el.value.toUpperCase();
   else if (k === 'phone') {
-    el.value = el.value.replace(/[^\d ]/g, '').slice(0, 11); U.phone = el.value;
-    const d = U.phone.replace(/\D/g, ''), ok = d.length === 8;
+    const len = (countryOf() || { len: 8 }).len || 8;
+    el.value = el.value.replace(/[^\d ]/g, '').slice(0, len + 4); U.phone = el.value;
+    const d = U.phone.replace(/\D/g, ''), ok = d.length === len;
     el.parentElement.className = 'phone ' + (d.length === 0 ? '' : ok ? 'ok' : 'warn');
-    const h = document.getElementById('phone-hint'); if (h) h.textContent = d.length === 0 ? '8 chiffres. Aucun paiement maintenant.' : ok ? 'Numéro valide.' : 'Encore ' + (8 - d.length) + ' chiffre(s).';
+    const h = document.getElementById('phone-hint'); if (h) h.textContent = d.length === 0 ? len + ' chiffres. Aucun paiement maintenant.' : ok ? 'Numéro valide.' : d.length < len ? 'Encore ' + (len - d.length) + ' chiffre(s).' : 'Trop de chiffres (' + len + ' attendus).';
     const b = document.getElementById('trial-cta'); if (b) b.setAttribute('aria-disabled', ok ? 'false' : 'true');
   }
 });
@@ -398,7 +475,7 @@ window.addEventListener('hashchange', () => { const h = location.hash.slice(1); 
 const fired = new Set();
 function reminders() {
   if (!S.onboarded || !S.profile.assessedAt) return;
-  const n = new Date(), hm = pad(n.getHours()) + ':' + pad(n.getMinutes()), today = dayKey(n);
+  const n = now(), hm = hhmm(n), today = dayKey(n);
   const notify = (id, text) => {
     const tag = today + id; if (fired.has(tag)) return; fired.add(tag);
     if ('Notification' in window && Notification.permission === 'granted' && document.visibilityState !== 'visible') {
@@ -422,7 +499,7 @@ const h0 = location.hash.slice(1);
 if (S.onboarded && S.profile.assessedAt && VIEWS[h0] && !['onb', 'setup'].includes(h0)) U.screen = h0;
 render(false);
 sync();
-setInterval(() => { if (TAB_SCREENS.includes(U.screen)) render(); }, 60000);
+setInterval(() => { if (TAB_SCREENS.includes(U.screen) && !U.wheel.spinning) render(); }, 60000);
 if (S.trial && !S.trial.cancelledAt && navigator.onLine) {
   api.getProfile().then((p) => { if (p && p.trial_started_at) { S.trial = { plan: p.trial_plan, startedAt: p.trial_started_at, cancelledAt: p.trial_cancelled_at }; persist(); render(); } }).catch(() => {});
 }
