@@ -1,7 +1,8 @@
 import { SHARED_DEFS } from './art.js';
-import { SLOT_ORDER, MAIN_SLOTS, SLOT_INFO, NUTRIENTS, TAG_BENEFIT, DISHES, CHAT_CHIPS, DAY_THEMES, COUNTRIES, OPERATORS, APPETITE_TIPS } from './content.js';
+import { HOW, SLOT_ORDER, MAIN_SLOTS, SLOT_INFO, NUTRIENTS, TAG_BENEFIT, DISHES, CHAT_CHIPS, DAY_THEMES, COUNTRIES, OPERATORS, APPETITE_TIPS } from './content.js';
 import { assess, planDay, missionFor, tipsFor, shopping, cookWith, slotNow, wheelItems } from './engine.js';
 import { now, setTZ, hhmm } from './time.js';
+import * as voice from './voice.js';
 import { CONFIG } from './config.js';
 import { load, save, wipe, fresh, enqueue, flush } from './store.js';
 import { makeApi } from './api.js';
@@ -82,7 +83,7 @@ function computed() {
     return (dayCache[off] = planDay(d, S.profile, A, S.swaps, k, S.picks).map((m) => Object.assign({}, m, { takenAt: logs[m.slot] || null })));
   };
   return {
-    A, isPlus, dateAt, day, dark: isDark(), now: now(), slotNow: slotNow(), country: countryOf(), payMethods: payMethods(),
+    A, isPlus, dateAt, day, dark: isDark(), voices: voice.voices(), voiceNow: voice.bestVoice(), prettyVoice: voice.prettyName, now: now(), slotNow: slotNow(), country: countryOf(), payMethods: payMethods(),
     wheel: (slot, maxMin) => wheelItems(slot, S.profile, A, dateAt(0), maxMin),
     wheelLeft: (slot) => 4 - (S.wheelUse[dayKey(now()) + ':' + slot] || 0),
     untilMidnight: untilMidnight(),
@@ -218,7 +219,7 @@ function ask(text) {
 const setD = (k, v) => { U.draft[k] = v; sfx.tick(); render(); };
 const toggleIn = (arr, v) => (arr.includes(v) ? arr.filter((x) => x !== v) : arr.concat(v));
 const ACT = {
-  go: (a) => go(a),
+  go: (a) => { voice.stop(); U.speaking = null; go(a); },
   onbNext() { sfx.tap(); if (U.onbStep < 2) { U.onbStep++; U.enter = true; render(false); } else ACT.onbSkip(); },
   onbPrev() { sfx.tap(); U.onbStep = Math.max(0, U.onbStep - 1); U.enter = true; render(false); },
   onbGo(a) { sfx.tap(); U.onbStep = +a; U.enter = true; render(false); },
@@ -302,10 +303,11 @@ const ACT = {
     toast(done ? 'Défi de la semaine réussi ! Bravo ' + S.profile.name + ' !' : `Défi validé pour aujourd'hui : ${rec.days.length}/${m.goal}.`);
   },
   nextTip() { S.tip = (S.tip + 1) % 99; sfx.tap(); persist(); render(); },
-  speak() {
-    if (!('speechSynthesis' in window)) { toast("La lecture audio n'est pas disponible sur ce téléphone."); return; }
-    speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(computed().tip()); u.lang = 'fr-FR'; u.rate = 0.95; speechSynthesis.speak(u);
-  },
+  speak() { readAloud('tip', computed().tip()); },
+  speakMsg(i) { const m = S.chat[+i]; if (m) readAloud('msg' + i, m.text); },
+  speakRecipe(k) { const m = recipeMeal(k); if (m) readAloud('recipe', `${m.name}. ${m.desc || ''} Il te faut : ${(m.ing || []).join(', ')}. ${(HOW[m.id] || []).map((x, i) => 'Étape ' + (i + 1) + '. ' + x).join(' ')} Bon appétit !`); },
+  pickVoice(uri) { S.voice = uri; voice.setVoice(uri); persist(); readAloud('test', `Bonjour ${S.profile.name || ''} ! Je suis Kalou. Aujourd'hui, on mange bien, et on se fait plaisir.`); render(); },
+  testVoice() { readAloud('test', `Bonjour ${S.profile.name || ''} ! Je suis Kalou. Aujourd'hui, on mange bien, et on se fait plaisir.`); },
   themeInfo() { const th = computed().theme(0); sfx.tap(); toast(th.title + ' : ' + th.why); },
   streakInfo() { const n = computed().streak; sfx.tap(); toast(n ? `${n} jour${n > 1 ? 's' : ''} de suite avec au moins 2 repas notés. Continue !` : 'Note au moins 2 repas aujourd’hui pour démarrer ta série.'); },
   nutInfo() { U.nutOpen = !U.nutOpen; sfx.tap(); render(); },
@@ -404,6 +406,23 @@ const ACT = {
     window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
   }
 };
+
+/* ---------- Voix de Kalou ---------- */
+voice.setVoice(S.voice);
+voice.onVoices(() => { if (U.screen === 'profile') render(); });
+function readAloud(key, text) {
+  if (!voice.supported()) { toast("La lecture audio n'est pas disponible sur ce téléphone."); return; }
+  if (U.speaking === key) { voice.stop(); U.speaking = null; render(); return; }
+  if (!voice.voices().length) toast('Astuce : installe une voix française dans les réglages du téléphone pour une voix plus naturelle.');
+  U.speaking = key; render();
+  voice.say(text, { onEnd: () => { if (U.speaking === key) { U.speaking = null; render(); } } });
+}
+function recipeMeal(k) {
+  const C = computed();
+  if (k === 'wheel') return U.wheel.result;
+  if (k && k.startsWith('cook:')) return C.cookWith(U.have)[+k.split(':')[1]];
+  const [off, slot] = (k || '').split(':'); return C.day(+off).find((x) => x.slot === slot);
+}
 
 /* ---------- La roue ---------- */
 const KALOU_RESPIN = [

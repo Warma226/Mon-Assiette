@@ -262,7 +262,7 @@ export function home(S, U, C) {
         <button class="chip-btn light tap" data-act="recipe" data-arg="0:${hero.slot}">Recette</button>
         <button class="chip-btn light tap" data-act="swap" data-arg="0:${hero.slot}">${icon('improve', 14, '#3C433D', 2)} Autre idée</button>
       </div>
-      ${U.open === '0:' + hero.slot ? recipeBox(hero) : ''}
+      ${U.open === '0:' + hero.slot ? recipeBox(hero, '0:' + hero.slot, U) : ''}
     </div>` : `<div class="hero-meal done fu d2"><div class="hm-main"><div class="hm-img">${kalou('bravo', 84)}</div><div class="hm-txt"><small>Journée complète</small><b>Bravo, tu as tout noté !</b><em>Demain matin : ${esc(C.day(1)[0].name)}</em></div></div></div>`}
 
     <div class="card nut fu d3">
@@ -308,7 +308,7 @@ export function home(S, U, C) {
     <div class="tip-row fu d5">
       <div class="tip-kalou">${kalou('clin', 88)}</div>
       <div class="tip-bubble"><small>Le conseil de Kalou pour toi</small><p class="popnow">${esc(C.tip())}</p>
-        <div class="row"><button class="chip-btn light" data-act="nextTip">Autre conseil</button><button class="chip-btn light" data-act="speak" aria-label="Écouter le conseil">${img3d('speaker-high-volume', 16)} Écouter</button></div></div>
+        <div class="row"><button class="chip-btn light" data-act="nextTip">Autre conseil</button><button class="chip-btn light ${U.speaking === 'tip' ? 'speaking' : ''}" data-act="speak" aria-label="Écouter le conseil">${img3d('speaker-high-volume', 16)} ${U.speaking === 'tip' ? 'Stop' : 'Écouter'}</button></div></div>
     </div>
 
     ${!C.isPlus ? `<button class="promo tap fu d6" data-act="go" data-arg="offers"><span><small>MON ASSIETTE PLUS</small><b>${C.trialUsed ? 'Passe à Plus' : 'Essaie Plus gratuitement 72 h'}</b><em>Ta semaine complète, ta liste de courses, une nutritionniste.</em></span><i>${icon('next', 18, '#0E0E0E', 2.2)}</i></button>` : ''}
@@ -324,10 +324,12 @@ export function fiche(m, full = true) {
     ${m.local ? `<span class="loc">${img3d('seedling', 14)} Plat de chez toi</span>` : ''}
     ${m.baseName && m.baseName !== m.name ? `<span class="aka">aussi appelé « ${esc(m.baseName)} »</span>` : ''}</div></div>`;
 }
-function recipeBox(m) {
+function recipeBox(m, k, U) {
   const steps = HOW[m.id] || [];
+  const on = U && U.speaking === 'recipe';
   return `<div class="recipe popnow"><b>Comment le préparer${m.min ? ` <small class="muted">· ${m.min} min</small>` : ''}</b><ol>${steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>
-    ${m.ing && m.ing.length ? `<small class="muted">Il te faut : ${m.ing.map(esc).join(', ')}.</small>` : ''}</div>`;
+    ${m.ing && m.ing.length ? `<small class="muted">Il te faut : ${m.ing.map(esc).join(', ')}.</small>` : ''}
+    ${k ? `<button class="listen tap ${on ? 'speaking' : ''}" data-act="speakRecipe" data-arg="${k}">${img3d('speaker-high-volume', 18)} ${on ? 'Arrêter la lecture' : 'Kalou te lit la recette'}${on ? '<i class="eq"><b></b><b></b><b></b></i>' : ''}</button>` : ''}</div>`;
 }
 
 /* ================= Ma semaine ================= */
@@ -360,7 +362,7 @@ function mealRow(m, off, U, C) {
     ${m.desc ? `<p class="mc-desc">${esc(m.desc)}</p>` : ''}${fiche(m, false)}
     <div class="why-chips">${m.reasons.map((r) => `<span>${esc(r)}</span>`).join('')}</div>
     <div class="mc-actions"><button class="link sm" data-act="recipe" data-arg="${k}">${U.open === k ? 'Fermer' : 'Recette'}</button><button class="link sm" data-act="swap" data-arg="${k}">Autre idée</button>${m.takenAt ? `<small class="ok-txt">Mangé à ${m.takenAt}</small>` : ''}</div>
-    ${U.open === k ? recipeBox(m) : ''}
+    ${U.open === k ? recipeBox(m, k, U) : ''}
   </div>`;
 }
 
@@ -384,7 +386,7 @@ function cookHave(S, U, C) {
     ${m.desc ? `<p class="mc-desc">${esc(m.desc)}</p>` : ''}${fiche(m, false)}
     <div class="why-chips">${m.reasons.map((r) => `<span>${esc(r)}</span>`).join('')}</div>
     <div class="mc-actions"><button class="link sm" data-act="recipe" data-arg="cook:${i}">${U.open === 'cook:' + i ? 'Fermer' : 'Recette'}</button></div>
-    ${U.open === 'cook:' + i ? recipeBox(m) : ''}</div>`).join('')}`;
+    ${U.open === 'cook:' + i ? recipeBox(m, 'cook:' + i, U) : ''}</div>`).join('')}`;
 }
 function cookImprove(S, U, C) {
   const dishes = DISHES.filter((d) => !d.al.some((a) => S.profile.allergies.includes(a)));
@@ -436,7 +438,8 @@ export function chat(S, U, C) {
     </div>
     <div class="chat-list" id="chat-list" role="log" aria-live="polite">
       <span class="chat-note">Conseils généraux · ne remplacent pas un médecin</span>
-      ${msgs.map((m) => `<div class="msg ${m.from === 'me' ? 'me' : ''}">${esc(m.text)}</div>`).join('')}
+      ${msgs.map((m, i) => m.from === 'me' ? `<div class="msg me">${esc(m.text)}</div>`
+        : `<div class="msg">${esc(m.text)}${S.chat.length ? `<button class="msg-say tap ${U.speaking === 'msg' + i ? 'speaking' : ''}" data-act="speakMsg" data-arg="${i}" aria-label="${U.speaking === 'msg' + i ? 'Arrêter' : 'Écouter'}">${img3d('speaker-high-volume', 16)}${U.speaking === 'msg' + i ? '<i class="eq"><b></b><b></b><b></b></i>' : ''}</button>` : ''}</div>`).join('')}
       ${U.typing ? '<div class="msg typing" aria-label="Kalou écrit"><i class="dot1"></i><i class="dot2"></i><i class="dot3"></i></div>' : ''}
     </div>
     <div class="chat-chips">${CHAT_CHIPS.map((c, i) => `<button class="tap" data-act="ask" data-arg="${i}">${esc(c)}</button>`).join('')}</div>
@@ -464,6 +467,9 @@ export function profile(S, U, C) {
       <button class="li tap" data-act="editProfile"><span class="row">${img3d('counterclockwise-arrows-button', 28)}<b>Refaire mon bilan</b></span>›</button>
       <button class="li tap" data-act="askCountry"><span class="row">${img3d('alarm-clock', 28)}<span><b>${C.country ? esc(C.country.label) : 'Choisir mon pays'}</b><small>${C.country ? 'Heure de l’app : ' + hhmm(C.now) + ' (' + C.country.gmt + ')' : 'Pour ton menu et ton heure'}</small></span></span>›</button>
       <button class="li tap" data-act="toggleSound" role="switch" aria-checked="${S.sound}"><span class="row">${img3d(S.sound ? 'speaker-high-volume' : 'muted-speaker', 28)}<b>Sons</b></span><span class="switch ${S.sound ? 'on' : ''}"><i></i></span></button>
+      <div class="li voice-li"><span class="row">${img3d('speech-balloon', 28)}<span><b>Voix de Kalou</b><small>${C.voiceNow ? esc(C.prettyVoice(C.voiceNow)) : 'Voix du téléphone'}</small></span></span>
+        <button class="chip-btn light tap ${U.speaking === 'test' ? 'speaking' : ''}" data-act="testVoice">${img3d('speaker-high-volume', 16)} ${U.speaking === 'test' ? 'Stop' : 'Essayer'}</button></div>
+      ${C.voices.length > 1 ? `<div class="voice-list">${C.voices.slice(0, 6).map((v) => `<button class="pl tap ${C.voiceNow && v.voiceURI === C.voiceNow.voiceURI ? 'on' : ''}" data-act="pickVoice" data-arg="${esc(v.voiceURI)}">${esc(C.prettyVoice(v))}</button>`).join('')}</div>` : ''}
       <div class="li"><span class="row">${img3d(C.dark ? 'crescent-moon' : 'sun', 28)}<b>Apparence</b></span><span class="theme-seg">${[['clair', 'Clair'], ['sombre', 'Sombre'], ['auto', 'Auto']].map(([k, l]) => `<button class="tap ${(S.theme || 'clair') === k ? 'on' : ''}" data-act="setTheme" data-arg="${k}" aria-pressed="${(S.theme || 'clair') === k}">${l}</button>`).join('')}</span></div>
     </div>
     <div class="card fu d3 stack ${C.isPlus ? 'dark' : ''}">
@@ -601,7 +607,7 @@ export function wheel(S, U, C) {
       ${fiche(res)}
       <div class="wp-why">${res.reasons.map((g) => `<span>${icon('check', 12, '#0B100D', 3)}${esc(g)}</span>`).join('')}</div>
       <div class="row"><button class="btn-gold tap" data-act="wheelPick">${icon('check', 16, '#0B100D', 2.6)} Je le prépare</button><button class="btn-glass tap" data-act="wheelRecipe">${U.open === 'wheel' ? 'Fermer' : 'Recette'}</button></div>
-      ${U.open === 'wheel' ? recipeBox(res) : ''}
+      ${U.open === 'wheel' ? recipeBox(res, 'wheel', U) : ''}
     </div>` : ''}
     <button class="wp-toggle tap" data-act="wheelSkip" role="switch" aria-checked="${!!S.wheelSkip}">Passer l’animation <span class="switch ${S.wheelSkip ? 'on' : ''}"><i></i></span></button>
     <p class="wp-info">${info}</p>
