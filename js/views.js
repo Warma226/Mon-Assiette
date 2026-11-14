@@ -532,13 +532,17 @@ export function offers(S, U, C) {
     </header>
     ${notice}
 
-    <div class="shop-media fu d2"><img src="/assets/plus/${chosen.id}.webp" alt="Mon Assiette Plus · ${title}" width="800" height="800"></div>
+    <div class="shop-hero fu d2">
+      <div class="sh-txt"><small>MON ASSIETTE PLUS</small><b>Mange mieux chaque jour, avec Kalou</b>
+        <span class="sh-chips"><i>Plan 7 jours</i><i>Courses</i><i>Roue illimitée</i><i>Nutritionniste</i></span></div>
+      <div class="sh-kalou">${kalou(chosen.popular ? 'bravo' : 'joie', 120)}</div>
+    </div>
 
     <div class="shop-tabs fu d2" role="tablist">${PLANS.map((p) => `<button class="tap ${p.id === chosen.id ? 'on' : ''}" role="tab" aria-selected="${p.id === chosen.id}" data-act="pickPlan" data-arg="${p.id}"><b>${p.name}</b><small>${p.price}</small>${p.popular ? '<i>Populaire</i>' : ''}</button>`).join('')}</div>
 
     <div class="shop-info fu d3">
       <h1>Mon Assiette Plus · ${title}</h1>
-      <div class="shop-price"><b>${chosen.price.replace(' F', '')}</b><span>F CFA</span></div>
+      <div class="shop-price"><b>${chosen.price.replace(' F', '')}</b><span>F CFA<br><em>${chosen.id === 'semaine' ? 'la semaine' : 'le mois'}</em></span></div>
       <p class="shop-sub">Soit <b>${perDay} F par jour</b> pour manger mieux, chaque jour. ${chosen.popular ? '<em class="hot">Le plus choisi</em>' : ''}</p>
     </div>
 

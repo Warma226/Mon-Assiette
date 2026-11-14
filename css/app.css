@@ -780,3 +780,23 @@ html.theme-dark,html.theme-dark body{background:#070A08}
 .theme-dark .cta.shop-buy{background:#2F8F4E}
 .theme-dark .shop-trust,.theme-dark .faq{border-color:rgba(255,255,255,.08)}
 .shop-steps li>span{display:flex;flex-direction:column;gap:3px}
+/* Version dégradé + prix en rouge */
+.shop-hero{position:relative;overflow:hidden;display:flex;align-items:center;gap:6px;padding:22px 14px 22px 20px;border-radius:28px;color:#fff;
+  background:radial-gradient(90% 120% at 100% 0%,rgba(255,210,90,.55),transparent 55%),radial-gradient(80% 90% at 0% 100%,rgba(124,203,110,.55),transparent 60%),linear-gradient(135deg,#143A24 0%,#1F5133 35%,#2C7546 70%,#4E9A68 100%);
+  box-shadow:0 18px 40px rgba(20,58,36,.28)}
+.shop-hero::after{content:"";position:absolute;width:220px;height:220px;border-radius:50%;right:-70px;bottom:-90px;border:2px solid rgba(255,255,255,.12)}
+.sh-txt{flex:1;display:flex;flex-direction:column;gap:8px;position:relative;z-index:1}
+.sh-txt small{font-size:11.5px;letter-spacing:1.2px;font-weight:700;color:#FFD25A}
+.sh-txt b{font-size:23px;line-height:1.2;font-weight:800}
+.sh-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.sh-chips i{font-style:normal;font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.22)}
+.sh-kalou{flex:none;position:relative;z-index:1;filter:drop-shadow(0 12px 18px rgba(0,0,0,.25))}
+.shop-price b{background:linear-gradient(90deg,#FF5A36 0%,#E0263B 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.shop-price span{line-height:1.15}
+.shop-price em{font-style:normal;font-size:14px;font-weight:500;color:var(--muted)}
+.cta.shop-buy{background:linear-gradient(90deg,#FF5A36 0%,#E0263B 100%);box-shadow:0 12px 26px rgba(224,38,59,.32)}
+.cta.shop-buy .cta-dot{background:#fff}
+.shop-tabs button.on{border-color:#E0263B;box-shadow:0 0 0 1px #E0263B inset,0 8px 18px rgba(224,38,59,.12)}
+.shop-tabs button.on small{color:#E0263B;font-weight:700}
+.theme-dark .shop-tabs button.on{border-color:#FF5A36}
+.theme-dark .cta.shop-buy{background:linear-gradient(90deg,#FF5A36 0%,#E0263B 100%)}
