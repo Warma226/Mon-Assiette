@@ -1,6 +1,6 @@
 // Écrans de Mon Assiette. Chaque fonction renvoie du HTML ; les actions passent par data-act.
 
-import { kalou, img3d, icon, flag } from './art.js';
+import { kalou, img3d, icon, flag, faBadge } from './art.js';
 import {
   SLIDES, SEXES, AGES, ACTIVITIES, GOALS, CONDITIONS, PREGNANCY, ALLERGENS, DIETS, HABITS,
   DISHES, SLOT_INFO, SLOT_WHY, NUTRIENTS, TAG_BENEFIT, HOW, PANTRY, CHAT_CHIPS,
@@ -497,7 +497,7 @@ export function profile(S, U, C) {
       </div>
       ${U.info ? `<div class="note popnow">${ABOUT[U.info]}</div>` : ''}</div>
     <button class="btn-danger tap" data-act="wipe">Effacer mes données et recommencer</button>
-    <p class="fine">Mon Assiette · version 3.0 · Icônes Fluent Emoji (Microsoft, licence MIT)</p>
+    <p class="fine">Mon Assiette · version 4.0 · Icônes Font Awesome (CC BY 4.0)</p>
   </section>`;
 }
 
@@ -614,7 +614,7 @@ export function wheel(S, U, C) {
     const badge = m.min ? `${m.min >= 60 ? Math.floor(m.min / 60) + 'h' + (m.min % 60 ? String(m.min % 60).padStart(2, '0') : '') : m.min + '′'}` : '';
     const bw = badge.length * 7 + 14;
     return `${path}<g transform="rotate(${mid.toFixed(1)} ${cx} ${cy})">
-      <image href="/assets/icons/${m.icon || 'pot-of-food'}.webp" x="${(cx - sz / 2).toFixed(1)}" y="${(cy - R * 0.76 - sz / 2).toFixed(1)}" width="${sz.toFixed(0)}" height="${sz.toFixed(0)}"/>
+      ${faBadge(m.icon || 'pot-of-food', cx - sz / 2, cy - R * 0.76 - sz / 2, sz)}
       ${badge && b - a >= 26 ? `<g transform="translate(${cx} ${(cy - R * 0.5).toFixed(1)})"><rect x="${-bw / 2}" y="-9" width="${bw}" height="18" rx="9" fill="#fff"/><text text-anchor="middle" y="4.5" font-size="11.5" font-weight="700" fill="#141614">${badge}</text></g>` : ''}
     </g>`;
   }).join('');

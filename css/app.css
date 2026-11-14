@@ -800,3 +800,6 @@ html.theme-dark,html.theme-dark body{background:#070A08}
 .shop-tabs button.on small{color:#E0263B;font-weight:700}
 .theme-dark .shop-tabs button.on{border-color:#FF5A36}
 .theme-dark .cta.shop-buy{background:linear-gradient(90deg,#FF5A36 0%,#E0263B 100%)}
+/* Icônes plates */
+.i3d.fa{font-style:normal;padding:0;background:none;border:0;display:inline-flex;align-items:center;justify-content:center;flex:none;line-height:0}
+.i3d.fa svg{display:block}

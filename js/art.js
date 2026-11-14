@@ -1,4 +1,5 @@
-// Illustrations : Kalou (la mascotte), icônes 3D et icônes de trait.
+import { FA } from './icons.js';
+// Illustrations : Kalou (la mascotte), icônes plates et icônes de trait.
 
 let uid = 0;
 
@@ -52,9 +53,16 @@ export const SHARED_DEFS = `<svg width="0" height="0" style="position:absolute" 
 <linearGradient id="gDrop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8CC8FF"/><stop offset="1" stop-color="#2563EB"/></linearGradient>
 </defs></svg>`;
 
-// Icônes 3D (Fluent Emoji de Microsoft, licence MIT) : voir assets/icons/LICENSE-fluentui-emoji.txt
+// Icônes plates (Font Awesome Free, licence CC BY 4.0) : voir js/icons.js et assets/icons/LICENSE-fontawesome.txt
+// Le nom historique « img3d » est gardé pour ne pas toucher tous les écrans.
 export function img3d(name, size = 38, alt = '') {
-  return `<img class="i3d" src="/assets/icons/${name}.webp" width="${size}" height="${size}" alt="${alt}" loading="lazy" decoding="async" draggable="false">`;
+  const f = FA[name] || FA['pot-of-food'];
+  return `<i class="i3d fa" style="width:${size}px;height:${size}px;color:${f[2]}" ${alt ? `role="img" aria-label="${alt}"` : 'aria-hidden="true"'}><svg viewBox="${f[0]}" width="78%" height="78%" fill="currentColor"><path d="${f[1]}"/></svg></i>`;
+}
+// Même icône, à poser dans un dessin SVG (roue) : pastille blanche + pictogramme coloré
+export function faBadge(name, x, y, size) {
+  const f = FA[name] || FA['pot-of-food'], g = size * 0.6;
+  return `<circle cx="${(x + size / 2).toFixed(1)}" cy="${(y + size / 2).toFixed(1)}" r="${(size / 2).toFixed(1)}" fill="#fff"/><svg x="${(x + (size - g) / 2).toFixed(1)}" y="${(y + (size - g) / 2).toFixed(1)}" width="${g.toFixed(1)}" height="${g.toFixed(1)}" viewBox="${f[0]}" fill="${f[2]}"><path d="${f[1]}"/></svg>`;
 }
 
 // Choisit l'icône d'un plat d'après son nom
