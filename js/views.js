@@ -516,7 +516,7 @@ export function offers(S, U, C) {
     <div class="promo hero fu d2"><div class="promo-kalou">${kalou('bravo', 108)}</div>
       <span><small class="tag">${canTrial ? 'ESSAI GRATUIT' : 'BIENTÔT'}</small><b>${canTrial ? '72 heures offertes' : 'Paiement Mobile Money'}</b><em>${canTrial ? "Rien à payer aujourd'hui. Tu arrêtes en un clic." : 'Ton essai est terminé. Laisse ton numéro : on te prévient dès l’ouverture.'}</em></span></div>
     ${C.isPlus ? `<div class="card dark stack popnow"><b class="h3">Ton essai ${PLAN_NAMES[S.trial.plan]} est actif</b><small>Il te reste ${C.hoursLeft} h.</small><button class="btn-ghost tap" data-act="cancelTrial">Arrêter l'essai</button></div>` : ''}
-    <div class="fu d3 stack">${PLANS.map((p) => `<button class="plan tap ${p.id === chosen.id ? 'on' : ''}" data-act="pickPlan" data-arg="${p.id}" aria-pressed="${p.id === chosen.id}"><span class="radio"><i></i></span><span class="grow"><b>${p.name}</b><small>${p.desc}</small></span><span class="price"><b>${p.price}</b><small>${p.per}</small></span>${p.popular ? '<span class="ribbon">Le plus choisi</span>' : ''}</button>`).join('')}</div>
+    <div class="fu d3 stack">${PLANS.map((p) => `<button class="plan tap ${p.id === chosen.id ? 'on' : ''}" data-act="pickPlan" data-arg="${p.id}" aria-pressed="${p.id === chosen.id}"><span class="radio"><i></i></span><span class="grow"><b>${p.name}</b><small>${p.desc}</small></span><span class="price"><b>${p.price}</b><small>${p.per}</small></span>${p.popular ? '<span class="ribbon">Le plus choisi</span>' : p.best ? '<span class="ribbon gold">Meilleur prix</span>' : ''}</button>`).join('')}</div>
     <div class="card fu d4 feat"><div class="feat-row head"><span>Ce qui est inclus</span><span>Gratuit</span><span class="green">Plus</span></div>
       ${FEATURES.map((f) => `<div class="feat-row"><span>${f[0]}</span><span class="${f[1] === '—' ? 'no' : 'yes'}">${f[1]}</span><span class="yes b">${f[2]}</span></div>`).join('')}</div>
     <div class="fu d5 stack">
@@ -536,7 +536,7 @@ export function offers(S, U, C) {
         ${U.showCode ? `<form class="row" data-form="code"><label for="org-code" class="sr">Code</label><input id="org-code" class="field sm" type="text" value="${esc(U.code)}" placeholder="Ex. DEMO2026" data-input="code" autocapitalize="characters" maxlength="30"><button type="submit" class="btn-dark tap">Valider</button></form>` : ''}
         <button class="link-row" data-act="invite">Inviter un ami<span>›</span></button>
       </div>
-      <p class="fine">Rappel avant la fin de l'essai. Aucun prélèvement si tu arrêtes avant 72 h. Prix en F CFA.</p>
+      <p class="fine">Rappel avant la fin de l'essai. Aucun prélèvement si tu arrêtes avant 72 h. Prix en F CFA, frais Mobile Money inclus : tu paies exactement ce prix.</p>
     </div>
   </section>`;
 }

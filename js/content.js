@@ -229,12 +229,15 @@ export function seasonFor(month) {
 export const CHAT_CHIPS = ['Pourquoi ce menu pour moi ?', 'Que manger le soir ?', 'Mes allergies', "Combien d'eau par jour ?", 'Bien manger sans trop dépenser', 'Je grignote le soir'];
 
 /* ---------- Offres ---------- */
+// Prix calés sur les frais des agrégateurs Mobile Money (pourcentage seul, sans frais fixe) :
+// la formule à la semaine coûte le plus en frais (4 paiements par mois), on pousse donc le mois et l'année.
 export const PLANS = [
-  { id: 'semaine', name: 'Semaine', desc: 'Pour essayer à petit prix', price: '300 F', per: 'CFA / semaine', popular: false },
-  { id: 'mois', name: 'Mois', desc: 'Plus de 20 % moins cher que la semaine', price: '1 000 F', per: 'CFA / mois', popular: true },
-  { id: 'trimestre', name: '3 mois', desc: 'Le meilleur prix pour suivre un vrai programme', price: '2 500 F', per: 'CFA / 3 mois', popular: false }
+  { id: 'semaine', name: 'Semaine', desc: 'Pour essayer à petit prix', price: '350 F', per: 'CFA / semaine', popular: false },
+  { id: 'mois', name: 'Mois', desc: '34 % moins cher que la semaine', price: '1 000 F', per: 'CFA / mois', popular: true },
+  { id: 'trimestre', name: '3 mois', desc: '833 F par mois, pour suivre un vrai programme', price: '2 500 F', per: 'CFA / 3 mois', popular: false },
+  { id: 'annee', name: 'Année', desc: '3 mois offerts : 750 F par mois', price: '9 000 F', per: 'CFA / an', popular: false, best: true }
 ];
-export const PLAN_NAMES = { semaine: 'Plus Semaine', mois: 'Plus Mois', trimestre: 'Plus 3 mois' };
+export const PLAN_NAMES = { semaine: 'Plus Semaine', mois: 'Plus Mois', trimestre: 'Plus 3 mois', annee: 'Plus Année' };
 export const FEATURES = [
   ['Bilan nutritionnel complet', '✓', '✓'],
   ['Plan du jour personnalisé et expliqué', '✓', '✓'],
@@ -242,6 +245,7 @@ export const FEATURES = [
   ['Améliorer un plat', '3 / sem.', 'Illimité'],
   ['Plan de 7 jours + courses de la semaine', '—', '✓'],
   ['Changer un repas du plan', '1 / jour', 'Illimité'],
+  ['Roue de Kalou', '4 tours / repas', 'Illimité'],
   ['Questions à une nutritionniste', '—', '✓']
 ];
 // Logos officiels : fichiers à déposer dans assets/pay/ (kit marchand de chaque opérateur ou de l'agrégateur de paiement).
