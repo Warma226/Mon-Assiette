@@ -418,6 +418,7 @@ const ACT = {
       U.licKey = t.slice(0, 120); sfx.tick(); render();
     } catch (e) { toast('Appuie longuement dans la case puis « Coller ».'); document.querySelector('[data-input=licKey]')?.focus(); }
   },
+  faq(a) { U.faq = U.faq === +a ? null : +a; sfx.tap(); render(); },
   toggleKey() { U.showKey = !U.showKey; sfx.tap(); render(); },
   async activateKey() {
     const key = (U.licKey || '').trim();

@@ -510,66 +510,79 @@ export function offers(S, U, C) {
   const link = C.chariowLink(chosen.id);
   const ops = C.payMethods.filter((m) => m.id !== 'card');
   const keyOpen = U.showKey || (!freshTrial && !C.paid && !C.trialOn);
-
-  // En-tête selon la situation
-  const hero = C.paid
-    ? { tag: 'PLUS ACTIF', big: 'Merci pour ton soutien !', small: `Plus est actif jusqu’au ${until}. Tu peux prolonger quand tu veux : les jours s’ajoutent.`, pose: 'bravo' }
-    : C.trialOn ? { tag: 'ESSAI EN COURS', big: `Encore ${C.hoursLeft} h d’essai`, small: 'Garde Plus après l’essai en payant par Mobile Money.', pose: 'clin' }
-    : freshTrial ? { tag: 'ESSAI GRATUIT', big: '72 heures offertes', small: 'Rien à payer, aucun numéro demandé. Tu arrêtes quand tu veux.', pose: 'bravo' }
-    : { tag: 'MON ASSIETTE PLUS', big: 'Continue avec Plus', small: 'Paie en 1 minute par Mobile Money, puis active ta clé ici.', pose: 'joie' };
-
-  const payCta = (label) => cta(label, 'payChariow', { pulse: !freshTrial, icon: 'check', sub: link ? 'Mobile Money ou carte · page sécurisée Chariow' : 'Cette formule arrive très bientôt', disabled: !link, id: 'pay-cta' });
-  const actions = C.paid ? payCta('Prolonger : ' + chosen.price + ' · ' + chosen.name)
-    : freshTrial ? cta("Commencer l'essai gratuit", 'startTrial', { pulse: true, sub: 'Puis ' + chosen.price + ' ' + chosen.per + ' si tu continues · sans engagement', id: 'trial-cta' })
-      + `<button class="link center" data-act="payChariow">Ou payer ${chosen.price} tout de suite</button>`
-    : payCta('Payer ' + chosen.price + ' · ' + chosen.name);
-
-  const steps = [
-    ['mobile-phone', 'Paie sur la page sécurisée', (ops.length ? ops.map((m) => m.label).join(', ') + ' ou carte' : 'Mobile Money ou carte') + '. Le paiement se fait sur Chariow.'],
-    ['sparkles', 'Reçois ta clé', 'Elle s’affiche après le paiement et arrive aussi par e-mail.'],
-    ['party-popper', 'Colle-la ici', 'Plus s’active tout de suite, sur ce téléphone.']
+  const amount = Number(chosen.price.replace(/\D/g, ''));
+  const days = chosen.id === 'semaine' ? 7 : 30;
+  const perDay = Math.round(amount / days);
+  const title = chosen.id === 'semaine' ? '1 semaine' : '1 mois';
+  const faq = [
+    ['Comment je reçois ma clé ?', 'Juste après le paiement, ta clé s’affiche sur la page de confirmation et arrive aussi par e-mail. Reviens ici, colle-la : Plus s’active tout de suite.'],
+    ['Est-ce que je serai prélevé chaque mois ?', 'Non. Il n’y a aucun prélèvement automatique : tu paies seulement quand tu veux prolonger.'],
+    ['Ma clé marche sur un autre téléphone ?', 'Une clé s’active sur un seul téléphone. Garde-la précieusement : elle sert aussi de preuve d’achat.'],
+    ['Avec quoi je peux payer ?', (ops.length ? ops.map((m) => m.label).join(', ') + ' ou carte bancaire' : 'Mobile Money ou carte bancaire') + ', sur la page sécurisée de Chariow.']
   ];
+  const notice = C.paid ? `<div class="shop-note ok">${icon('check', 16, '#15803D', 2.6)}<span><b>Plus est actif</b> jusqu’au ${until}. Les jours achetés s’ajoutent.</span></div>`
+    : C.trialOn ? `<div class="shop-note">${img3d('alarm-clock', 20)}<span><b>Essai en cours :</b> encore ${C.hoursLeft} h. Paie maintenant pour garder Plus.</span><button class="link sm" data-act="cancelTrial">Arrêter</button></div>` : '';
+  const buy = cta(C.paid ? `Prolonger · ${chosen.price}` : `Payer ${chosen.price}`, 'payChariow', { icon: 'check', sub: link ? 'Mobile Money ou carte · paiement sécurisé' : 'Bientôt disponible', disabled: !link, cls: 'shop-buy', id: 'pay-cta' });
 
-  return `<section class="page offers-page">
-    ${header('Mon Assiette <span class="green">Plus</span>')}
-    <div class="promo hero fu d2"><div class="promo-kalou">${kalou(hero.pose, 108)}</div>
-      <span><small class="tag">${hero.tag}</small><b>${hero.big}</b><em>${hero.small}</em></span></div>
-    ${C.trialOn ? `<div class="thin-bar fu d2"><div style="width:${Math.round(C.hoursLeft / 72 * 100)}%"></div></div>` : ''}
+  return `<section class="page shop">
+    <header class="shop-top fu d1">
+      <button class="round sm" data-act="go" data-arg="home" aria-label="Retour">${icon('back', 20, '#141614', 2)}</button>
+      <span class="shop-brand">Mon Assiette <b>Plus</b></span>
+      <span class="shop-lock">${icon('lock', 14, '#15803D', 2.4)} Sécurisé</span>
+    </header>
+    ${notice}
 
-    <div class="fu d3 stack">
-      <span class="lbl">Choisis ta formule</span>
-      ${PLANS.map((p) => `<button class="plan tap ${p.id === chosen.id ? 'on' : ''}" data-act="pickPlan" data-arg="${p.id}" aria-pressed="${p.id === chosen.id}"><span class="radio"><i></i></span><span class="grow"><b>${p.name}</b><small>${p.desc}</small></span><span class="price"><b>${p.price}</b><small>${p.per}</small></span>${p.popular ? '<span class="ribbon">Le plus choisi</span>' : ''}</button>`).join('')}
+    <div class="shop-media fu d2"><img src="/assets/plus/${chosen.id}.webp" alt="Mon Assiette Plus · ${title}" width="800" height="800"></div>
+
+    <div class="shop-tabs fu d2" role="tablist">${PLANS.map((p) => `<button class="tap ${p.id === chosen.id ? 'on' : ''}" role="tab" aria-selected="${p.id === chosen.id}" data-act="pickPlan" data-arg="${p.id}"><b>${p.name}</b><small>${p.price}</small>${p.popular ? '<i>Populaire</i>' : ''}</button>`).join('')}</div>
+
+    <div class="shop-info fu d3">
+      <h1>Mon Assiette Plus · ${title}</h1>
+      <div class="shop-price"><b>${chosen.price.replace(' F', '')}</b><span>F CFA</span></div>
+      <p class="shop-sub">Soit <b>${perDay} F par jour</b> pour manger mieux, chaque jour. ${chosen.popular ? '<em class="hot">Le plus choisi</em>' : ''}</p>
     </div>
 
-    <div class="fu d4 stack">${actions}</div>
+    <div class="shop-cta fu d3">
+      ${buy}
+      ${freshTrial ? `<button class="shop-ghost tap" data-act="startTrial">Essayer 72 h gratuitement d’abord</button>` : ''}
+    </div>
 
-    <div class="card stack key-box fu d4 ${keyOpen ? 'open' : ''}" id="key-box">
-      <button class="link-row" data-act="toggleKey">${img3d('sparkles', 22)} <b>Tu as payé ? Active ta clé</b><span>${keyOpen ? '˄' : '›'}</span></button>
+    <div class="shop-trust fu d3">
+      <span>${icon('lock', 16, '#141614', 2)}<small>Paiement sécurisé</small></span>
+      <span>${img3d('sparkles', 18)}<small>Activation immédiate</small></span>
+      <span>${icon('check', 16, '#141614', 2.4)}<small>Sans prélèvement</small></span>
+    </div>
+
+    <div class="shop-block fu d4">
+      <h2>Ce que tu obtiens</h2>
+      ${[['spiral-calendar', 'Ton plan de repas sur 7 jours', 'Chaque plat expliqué, adapté à ton bilan et à ton pays'], ['basket', 'Ta liste de courses prête', 'Calculée à partir de ton plan de la semaine'], ['party-popper', 'La roue de Kalou illimitée', 'Tourne autant que tu veux pour choisir quoi préparer'], ['counterclockwise-arrows-button', 'Changer un repas à volonté', 'Une autre idée dès qu’un plat ne te tente pas'], ['stethoscope', 'Une nutritionniste', 'Pose-lui tes questions, réponse sous 48 h']].map((f) => `<div class="shop-feat">${img3d(f[0], 34)}<span><b>${f[1]}</b><small>${f[2]}</small></span></div>`).join('')}
+    </div>
+
+    <div class="shop-block key-box fu d4 ${keyOpen ? 'open' : ''}" id="key-box">
+      <button class="link-row" data-act="toggleKey"><b>${img3d('sparkles', 20)} Tu as payé ? Active ta clé</b><span>${keyOpen ? '˄' : '›'}</span></button>
       ${keyOpen ? `<form class="stack" data-form="lic">
         <div class="key-row"><input class="field" type="text" value="${esc(C.licKey)}" placeholder="Colle ta clé ici" data-input="licKey" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="120" aria-label="Clé d’activation">
           <button type="button" class="chip-btn light tap" data-act="pasteKey">Coller</button></div>
-        <button type="submit" class="btn-dark tap" ${C.licBusy ? 'disabled' : ''}>${C.licBusy ? 'Vérification…' : 'Activer ma clé'}</button>
-        <small class="muted">1 clé = 1 téléphone. Garde ta clé : elle sert de preuve d’achat.</small></form>` : ''}
+        <button type="submit" class="btn-dark tap" ${C.licBusy ? 'disabled' : ''}>${C.licBusy ? 'Vérification…' : 'Activer ma clé'}</button></form>` : ''}
     </div>
 
-    <div class="card stack fu d5">
-      <b class="h3">Comment payer ?</b>
-      <ol class="how">${steps.map((st, i) => `<li><span class="how-n">${i + 1}</span>${img3d(st[0], 30)}<span><b>${st[1]}</b><small>${st[2]}</small></span></li>`).join('')}</ol>
-      <div class="accepted"><small class="muted">Paiement accepté${C.country && !C.country.id.startsWith('autre') ? ' ' + esc(C.country.in) : ''} :</small>
-        <div class="acc-logos">${ops.map((m) => `<span class="acc" title="${m.label}">${m.logo ? `<span class="acc-logo" style="background:${m.color}"><img src="${m.logo}" alt="${m.label}" onerror="this.remove()"></span>` : ''}<small>${m.label}</small></span>`).join('')}<span class="acc"><span class="acc-logo card-logo">${img3d('credit-card', 24)}</span><small>Carte bancaire</small></span></div>
-      </div>
+    <div class="shop-block fu d5">
+      <h2>Comment ça marche</h2>
+      <ol class="shop-steps"><li><i>1</i><span><b>Paie en 1 minute</b><small>Sur la page sécurisée Chariow</small></span></li><li><i>2</i><span><b>Reçois ta clé</b><small>À l’écran et par e-mail</small></span></li><li><i>3</i><span><b>Colle-la ici</b><small>Plus s’ouvre aussitôt</small></span></li></ol>
+      <div class="shop-pay">${ops.map((m) => m.logo ? `<span class="acc-logo" title="${m.label}" style="background:${m.color}"><img src="${m.logo}" alt="${m.label}" onerror="this.remove()"></span>` : `<span class="acc-txt">${m.label}</span>`).join('')}<span class="acc-logo card-logo" title="Carte bancaire">${img3d('credit-card', 22)}</span></div>
     </div>
 
-    <div class="card fu d5 feat"><div class="feat-row head"><span>Ce qui est inclus</span><span>Gratuit</span><span class="green">Plus</span></div>
-      ${FEATURES.map((f) => `<div class="feat-row"><span>${f[0]}</span><span class="${f[1] === '—' ? 'no' : 'yes'}">${f[1]}</span><span class="yes b">${f[2]}</span></div>`).join('')}</div>
+    <div class="shop-block fu d5">
+      <h2>Questions fréquentes</h2>
+      ${faq.map((q, i) => `<div class="faq ${U.faq === i ? 'open' : ''}"><button class="tap" data-act="faq" data-arg="${i}" aria-expanded="${U.faq === i}">${q[0]}<span>${U.faq === i ? '−' : '+'}</span></button>${U.faq === i ? `<p>${q[1]}</p>` : ''}</div>`).join('')}
+    </div>
 
-    ${C.trialOn ? `<button class="link center" data-act="cancelTrial">Arrêter mon essai</button>` : ''}
-    <div class="card stack fu d6">
+    <div class="shop-links fu d6">
       <button class="link-row" data-act="toggleCode">Code entreprise ou mutuelle ?<span>${U.showCode ? '˄' : '›'}</span></button>
       ${U.showCode ? `<form class="row" data-form="code"><label for="org-code" class="sr">Code</label><input id="org-code" class="field sm" type="text" value="${esc(U.code)}" placeholder="Ex. DEMO2026" data-input="code" autocapitalize="characters" maxlength="30"><button type="submit" class="btn-dark tap">Valider</button></form>` : ''}
       <button class="link-row" data-act="invite">Inviter un ami<span>›</span></button>
     </div>
-    <p class="fine">Prix en F CFA, frais Mobile Money inclus. Pas de prélèvement automatique : tu paies seulement quand tu veux prolonger. L’essai gratuit est valable une fois par téléphone.</p>
+    <p class="fine">Prix en F CFA, frais Mobile Money inclus. Conseils généraux de nutrition, qui ne remplacent pas l’avis d’un médecin.</p>
   </section>`;
 }
 
