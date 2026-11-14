@@ -146,3 +146,11 @@ insert into public.ma_org_codes (code, org_name, max_uses) values ('DEMO2026', '
 alter table public.ma_profiles add column if not exists country text;
 alter table public.ma_profiles drop constraint if exists ma_profiles_country_check;
 alter table public.ma_profiles add constraint ma_profiles_country_check check (country is null or country in ('bf','ci','sn','ml','bj','tg','ne','gn','autre0','autre1'));
+
+-- v3.6 : paiements PayDunya et protection de l'abonnement
+alter table public.ma_profiles add column if not exists plus_plan text;
+alter table public.ma_profiles add column if not exists plus_until timestamptz;
+-- (table ma_payments et fonction ma_apply_payment : voir l'historique des migrations Supabase « mon_assiette_paiements_paydunya »)
+revoke insert, update on public.ma_profiles from anon, authenticated;
+grant insert (device_id, name, goal, household, kids, budget, lang, notif, country, pay_method, pay_phone) on public.ma_profiles to anon, authenticated;
+grant update (device_id, name, goal, household, kids, budget, lang, notif, country, pay_method, pay_phone, updated_at) on public.ma_profiles to anon, authenticated;
