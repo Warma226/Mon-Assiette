@@ -5,7 +5,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 const KEY = Deno.env.get('CHARIOW_API_KEY') ?? '';
 const API = 'https://api.chariow.com/v1';
 const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
-const PRICES: Record<string, number> = { semaine: 650, mois: 1000, trimestre: 2500, annee: 9000 };
+const PRICES: Record<string, number> = { semaine: 650, mois: 2500, trimestre: 2500, annee: 9000 };
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',

@@ -40,7 +40,7 @@ const U = {
   planOffset: 0, open: null, nutOpen: false,
   cookTab: 'have', have: [], dish: 'rizgras', checked: {},
   chatDraft: '', typing: false,
-  offerPlan: (S.trial && S.trial.plan) || 'mois', pay: S.pay.method || null, phone: '',
+  offerPlan: S.trial && ['semaine', 'mois'].includes(S.trial.plan) ? S.trial.plan : 'mois', pay: S.pay.method || null, phone: '',
   wheel: { slot: null, time: 30, spins: 0, result: null, rot: 0, spinning: false, msg: null },
   showCode: false, code: '', info: null
 };
