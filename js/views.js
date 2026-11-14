@@ -543,50 +543,70 @@ const WHEEL_SLOTS = ['matin', 'collation', 'midi', 'dessert', 'bienetre', 'soir'
 const WHEEL_TIMES = [[15, '15 min'], [30, '30 min'], [60, '1 h'], [999, 'J’ai le temps']];
 export function wheel(S, U, C) {
   const W = U.wheel, slot = W.slot || C.slotNow, { items, relaxed } = C.wheel(slot, W.time === 999 ? 0 : W.time);
+  const left = C.wheelLeft(slot), unlimited = C.isPlus, spent = !unlimited && left <= 0;
   const R = 140, cx = 150, cy = 150, rad = (x) => (x - 90) * Math.PI / 180;
   let acc = 0;
+  const defs = items.map((_, i) => `<radialGradient id="wg${i}" cx="150" cy="150" r="140" gradientUnits="userSpaceOnUse"><stop offset="0.25" stop-color="#121815"/><stop offset="0.72" stop-color="${WCOL[i % 8]}" stop-opacity=".28"/><stop offset="1" stop-color="${WCOL[i % 8]}" stop-opacity=".62"/></radialGradient>`).join('');
   const segs = items.map((m, i) => {
     const a = acc, b = acc + m.share * 360; acc = b;
     const mid = (a + b) / 2, large = b - a > 180 ? 1 : 0;
     const p1 = [cx + R * Math.cos(rad(a)), cy + R * Math.sin(rad(a))], p2 = [cx + R * Math.cos(rad(b)), cy + R * Math.sin(rad(b))];
-    const ir = R * 0.68, ix = cx + ir * Math.cos(rad(mid)), iy = cy + ir * Math.sin(rad(mid)), sz = Math.max(26, Math.min(44, (b - a) * 0.75));
-    const path = items.length === 1 ? `<circle cx="${cx}" cy="${cy}" r="${R}" fill="${WCOL[i % 8]}"/>` : `<path d="M${cx} ${cy} L${p1[0].toFixed(2)} ${p1[1].toFixed(2)} A${R} ${R} 0 ${large} 1 ${p2[0].toFixed(2)} ${p2[1].toFixed(2)}Z" fill="${WCOL[i % 8]}" stroke="#fff" stroke-width="2"/>`;
-    return `${path}<image href="/assets/icons/${m.icon || 'pot-of-food'}.webp" x="${(ix - sz / 2).toFixed(1)}" y="${(iy - sz / 2).toFixed(1)}" width="${sz.toFixed(0)}" height="${sz.toFixed(0)}" transform="rotate(${mid.toFixed(1)} ${ix.toFixed(1)} ${iy.toFixed(1)})"/>`;
+    const sz = Math.max(30, Math.min(56, (b - a) * 0.9));
+    const path = items.length === 1 ? `<circle cx="${cx}" cy="${cy}" r="${R}" fill="url(#wg${i})"/>`
+      : `<path d="M${cx} ${cy} L${p1[0].toFixed(2)} ${p1[1].toFixed(2)} A${R} ${R} 0 ${large} 1 ${p2[0].toFixed(2)} ${p2[1].toFixed(2)}Z" fill="url(#wg${i})" stroke="#0B100D" stroke-width="5" stroke-linejoin="round"/>`;
+    const badge = m.min ? `${m.min >= 60 ? Math.floor(m.min / 60) + 'h' + (m.min % 60 ? String(m.min % 60).padStart(2, '0') : '') : m.min + '′'}` : '';
+    const bw = badge.length * 7 + 14;
+    return `${path}<g transform="rotate(${mid.toFixed(1)} ${cx} ${cy})">
+      <image href="/assets/icons/${m.icon || 'pot-of-food'}.webp" x="${(cx - sz / 2).toFixed(1)}" y="${(cy - R * 0.76 - sz / 2).toFixed(1)}" width="${sz.toFixed(0)}" height="${sz.toFixed(0)}"/>
+      ${badge && b - a >= 26 ? `<g transform="translate(${cx} ${(cy - R * 0.5).toFixed(1)})"><rect x="${-bw / 2}" y="-9" width="${bw}" height="18" rx="9" fill="#fff"/><text text-anchor="middle" y="4.5" font-size="11.5" font-weight="700" fill="#141614">${badge}</text></g>` : ''}
+    </g>`;
   }).join('');
-  const res = W.result, left = Math.max(0, 4 - W.spins);
-  return `<section class="page wheel-page">
-    ${header('La roue de Kalou', { back: 'home' })}
-    <div class="card stack fu d2">
-      <span class="lbl">Pour quel moment ?</span>
-      <div class="pills">${WHEEL_SLOTS.map((x) => `<button class="pl tap ${x === slot ? 'on' : ''}" data-act="wheelSlot" data-arg="${x}" aria-pressed="${x === slot}" ${W.spinning ? 'disabled' : ''}>${SLOT_INFO[x].label}</button>`).join('')}</div>
-      <span class="lbl">Combien de temps as-tu ?</span>
-      <div class="pills">${WHEEL_TIMES.map(([v, l]) => `<button class="pl tap ${v === W.time ? 'on' : ''}" data-act="wheelTime" data-arg="${v}" aria-pressed="${v === W.time}" ${W.spinning ? 'disabled' : ''}>${l}</button>`).join('')}</div>
-      ${relaxed ? '<small class="muted">Peu de plats aussi rapides pour ce moment : j’ai mis les plus rapides qui te conviennent.</small>' : ''}
+  const res = W.result;
+  const slotLabel = SLOT_INFO[slot].label.toLowerCase();
+  const title = W.spinning ? 'La roue tourne…' : res ? 'La roue a choisi !' : spent ? `Tu as utilisé tes tours pour ce ${slotLabel}` : `Que préparer pour ton ${slotLabel} ?`;
+  const hub = W.spinning ? '<span class="hub-big">…</span>'
+    : spent ? `<small>Prochain tour</small><b id="wheel-count">${C.untilMidnight}</b>`
+    : `<span class="hub-big">${W.spins || (!unlimited && left < 4) ? 'Encore' : 'Tourner'}</span>`;
+  const info = unlimited ? 'Avec Plus, tu tournes autant que tu veux.'
+    : spent ? 'Tu as droit à 1 tour et 3 relances par repas, chaque jour. Choisis un autre moment ou reviens demain.'
+    : left === 4 ? 'Chaque jour : 1 tour et 3 relances par repas. Plus une case est grande, plus le plat te fait du bien.'
+    : `Encore ${left} relance${left > 1 ? 's' : ''} pour ce ${slotLabel} aujourd’hui.`;
+  const ctaBtn = spent
+    ? `<button class="wheel-cta tap" data-act="go" data-arg="offers">Tours illimités avec Plus ${img3d('sparkles', 26)}</button>`
+    : `<button class="wheel-cta tap" data-act="spin" ${W.spinning ? 'aria-disabled="true"' : ''}>${W.spinning ? 'Ça tourne…' : res ? 'Relancer la roue' : 'Tourner la roue'} ${img3d('sparkles', 26)}</button>`;
+  return `<section class="wheel-page">
+    <div class="wp-top">
+      <button class="wp-close tap" data-act="go" data-arg="home" aria-label="Fermer">${icon('back', 22, '#fff', 2)}</button>
+      <small class="wp-kicker">${unlimited ? 'Tours illimités avec Plus' : '1 tour + 3 relances par repas'}</small>
+      <span class="wp-spacer"></span>
     </div>
-    <div class="wheel-box fu d3">
-      <div class="wheel-pointer" aria-hidden="true"></div>
+    <h1 class="wp-title">${title}</h1>
+    <div class="wp-chips">${WHEEL_SLOTS.map((x) => `<button class="wc tap ${x === slot ? 'on' : ''}" data-act="wheelSlot" data-arg="${x}" aria-pressed="${x === slot}" ${W.spinning ? 'disabled' : ''}>${SLOT_INFO[x].label}</button>`).join('')}</div>
+    <div class="wp-chips">${WHEEL_TIMES.map(([v, l]) => `<button class="wc sm tap ${v === W.time ? 'on' : ''}" data-act="wheelTime" data-arg="${v}" aria-pressed="${v === W.time}" ${W.spinning ? 'disabled' : ''}>${img3d('alarm-clock', 14)} ${l}</button>`).join('')}</div>
+    ${relaxed ? '<small class="wp-muted">Peu de plats aussi rapides pour ce moment : j’ai mis les plus rapides qui te conviennent.</small>' : ''}
+    <div class="wheel-box ${spent ? 'spent' : ''}">
+      <svg class="wheel-pointer" viewBox="0 0 60 52" aria-hidden="true"><path d="M8 6 H52 L30 44 Z" fill="rgba(255,210,90,.18)" stroke="#FFD25A" stroke-width="5" stroke-linejoin="round"/></svg>
       <svg class="wheel-svg" viewBox="0 0 300 300" role="img" aria-label="Roue de ${items.length} plats">
-        <circle cx="150" cy="150" r="148" fill="#141614"/>
+        <defs>${defs}</defs>
+        <circle cx="150" cy="150" r="149" fill="#0B100D"/>
         <g id="wheel-disc" style="transform:rotate(${W.rot}deg);transform-origin:150px 150px">${segs}</g>
-        <circle cx="150" cy="150" r="30" fill="#fff" stroke="#141614" stroke-width="4"/>
+        <circle cx="150" cy="150" r="56" fill="#0B100D"/>
       </svg>
-      <button class="spin-hub tap" id="spin-btn" data-act="spin" ${W.spinning || !left ? 'aria-disabled="true"' : ''} aria-label="Tourner la roue">${W.spinning ? '…' : W.spins ? 'Encore' : 'Tourner'}</button>
+      <button class="spin-hub tap" id="spin-btn" data-act="spin" ${W.spinning || spent ? 'aria-disabled="true"' : ''} aria-label="Tourner la roue">${hub}</button>
     </div>
-    <p class="wheel-note fu d3">${W.spinning ? 'Ça tourne…' : W.spins === 0 ? 'Touche « Tourner » ou fais glisser la roue avec ton doigt. Plus une case est grande, plus le plat te fait du bien.' : left ? `Encore ${left - 0} relance${left > 1 ? 's' : ''} possible${left > 1 ? 's' : ''}.` : 'Plus de relance : la roue a parlé !'}</p>
-    ${W.msg && !W.spinning ? `<div class="tip-row popnow"><div class="tip-kalou">${kalou('clin', 70)}</div><div class="tip-bubble"><p>${esc(W.msg)}</p></div></div>` : ''}
-    ${res && !W.spinning ? `<div class="hero-meal wheel-res popnow">
-      <div class="hm-top"><span class="hm-when">La roue a choisi</span><span class="hm-slot">${SLOT_INFO[slot].label}</span></div>
-      <div class="hm-main"><div class="hm-img">${mealIcon(res, 84)}</div><div class="hm-txt"><small>${Math.round(res.share * 100)} % de chances · bon pour toi</small><b>${esc(res.name)}</b><em>${esc(res.portion)}</em></div></div>
+    ${W.msg && !W.spinning ? `<div class="wp-kalou popnow">${kalou('clin', 58)}<p>${esc(W.msg)}</p></div>` : ''}
+    ${res && !W.spinning ? `<div class="wp-res popnow">
+      <div class="row"><span class="wp-res-ico">${mealIcon(res, 64)}</span><div class="grow"><small>${SLOT_INFO[slot].label} · ${Math.round(res.share * 100)} % de chances</small><b>${esc(res.name)}</b><em>${esc(res.portion)}</em></div></div>
       ${fiche(res)}
-      <div class="gives"><small>Pourquoi il te convient</small>${res.reasons.map((g) => `<span>${icon('check', 12, '#15803D', 3)}${esc(g)}</span>`).join('')}</div>
-      <div class="hm-actions">
-        <button class="btn-dark tap" data-act="wheelPick">${icon('check', 16, '#fff', 2.6)} Je le prépare</button>
-        <button class="chip-btn light tap" data-act="wheelRecipe">${U.open === 'wheel' ? 'Fermer' : 'Recette'}</button>
-      </div>
+      <div class="wp-why">${res.reasons.map((g) => `<span>${icon('check', 12, '#0B100D', 3)}${esc(g)}</span>`).join('')}</div>
+      <div class="row"><button class="btn-gold tap" data-act="wheelPick">${icon('check', 16, '#0B100D', 2.6)} Je le prépare</button><button class="btn-glass tap" data-act="wheelRecipe">${U.open === 'wheel' ? 'Fermer' : 'Recette'}</button></div>
       ${U.open === 'wheel' ? recipeBox(res) : ''}
     </div>` : ''}
-    <div class="card stack fu d4"><b>Sur la roue</b>${items.map((m, i) => `<div class="wl"><i style="background:${WCOL[i % 8]}"></i><span class="grow">${esc(m.name)}${m.local ? ' <em class="loc-dot">de chez toi</em>' : ''}</span><small>${m.min ? m.min + ' min · ' : ''}${Math.round(m.share * 100)} %</small></div>`).join('')}
-      <small class="muted">Seulement des plats sûrs pour toi : ${S.profile.allergies.length ? 'sans tes allergènes, ' : ''}adaptés à ton bilan${C.country && !C.country.id.startsWith('autre') ? ' et courants ' + esc(C.country.in) : ''}.</small></div>
+    <button class="wp-toggle tap" data-act="wheelSkip" role="switch" aria-checked="${!!S.wheelSkip}">Passer l’animation <span class="switch ${S.wheelSkip ? 'on' : ''}"><i></i></span></button>
+    <p class="wp-info">${info}</p>
+    ${ctaBtn}
+    <div class="wp-list"><b>Sur la roue</b>${items.map((m, i) => `<div class="wl"><i style="background:${WCOL[i % 8]}"></i><span class="grow">${esc(m.name)}${m.local ? ' <em class="loc-dot">de chez toi</em>' : ''}</span><small>${m.min ? m.min + ' min · ' : ''}${Math.round(m.share * 100)} %</small></div>`).join('')}
+      <small class="wp-muted">Seulement des plats sûrs pour toi : ${S.profile.allergies.length ? 'sans tes allergènes, ' : ''}adaptés à ton bilan${C.country && !C.country.id.startsWith('autre') ? ' et courants ' + esc(C.country.in) : ''}.</small></div>
   </section>`;
 }
 

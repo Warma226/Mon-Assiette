@@ -13,6 +13,7 @@ let S = load();
 let api = makeApi(S.deviceId);
 sfx.setEnabled(S.sound);
 if (!S.picks) S.picks = {};
+if (!S.wheelUse) S.wheelUse = {};
 const countryOf = (id = S.profile.country) => COUNTRIES.find((c) => c.id === id) || null;
 const applyTZ = () => setTZ((countryOf() || {}).tz || null);
 applyTZ();
@@ -51,6 +52,7 @@ const dayKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDa
 function dateAt(off) { const d = now(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + off); return d; }
 const nowHM = () => { const d = now(); return d.getHours() + ':' + pad(d.getMinutes()); };
 function weekKey(d = now()) { const x = new Date(d); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return dayKey(x); }
+function untilMidnight() { const n = now(), s = 86400 - (n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds()); return [Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60].map(pad).join(':'); }
 const toMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -82,6 +84,8 @@ function computed() {
   return {
     A, isPlus, dateAt, day, now: now(), slotNow: slotNow(), country: countryOf(), payMethods: payMethods(),
     wheel: (slot, maxMin) => wheelItems(slot, S.profile, A, dateAt(0), maxMin),
+    wheelLeft: (slot) => 4 - (S.wheelUse[dayKey(now()) + ':' + slot] || 0),
+    untilMidnight: untilMidnight(),
     hoursLeft: isPlus ? Math.max(1, Math.ceil((end - Date.now()) / 3600000)) : 0,
     trialUsed: !!(t && (t.cancelledAt || Date.now() >= end)),
     orgName: S.orgName || null,
@@ -133,7 +137,7 @@ function render(keepScroll = true) {
   const C = computed(), prev = scroller();
   const top = keepScroll && !U.enter && prev ? prev.scrollTop : 0;
   const tabs = TAB_SCREENS.includes(U.screen);
-  root.className = 'app' + (U.enter ? ' enter' : '');
+  root.className = 'app' + (U.enter ? ' enter' : '') + (U.screen === 'wheel' ? ' dark' : '');
   root.innerHTML = SHARED_DEFS + `<main class="scroll ${tabs ? 'has-tabs' : ''}" id="main" tabindex="-1">${VIEWS[U.screen](S, U, C)}</main>` + (tabs ? V.tabbar(U.screen) : '');
   const sc = scroller(); if (sc) sc.scrollTop = top;
   if (U.screen === 'chat') { const l = document.getElementById('chat-list'); if (l) l.scrollTop = l.scrollHeight; }
@@ -354,6 +358,7 @@ const ACT = {
   wheelSlot(a) { Object.assign(U.wheel, { slot: a, spins: 0, result: null, msg: null }); U.open = null; sfx.tick(); render(); },
   wheelTime(a) { Object.assign(U.wheel, { time: +a, spins: 0, result: null, msg: null }); U.open = null; sfx.tick(); render(); },
   spin() { spinWheel(); },
+  wheelSkip() { S.wheelSkip = !S.wheelSkip; sfx.toggle(S.wheelSkip); persist(); render(); },
   wheelRecipe() { U.open = U.open === 'wheel' ? null : 'wheel'; sfx.tap(); render(); },
   wheelPick() {
     const W = U.wheel, m = W.result; if (!m) return;
@@ -404,14 +409,16 @@ function spinWheel() {
   const C = computed(), slot = W.slot || slotNow();
   const { items } = C.wheel(slot, W.time === 999 ? 0 : W.time);
   if (!items.length) return;
-  if (W.spins >= 4) { sfx.error(); toast('La roue a parlé ! Prépare son idée, ou change de moment.'); return; }
+  const useKey = dayKey(now()) + ':' + slot;
+  if (!C.isPlus && (S.wheelUse[useKey] || 0) >= 4) { sfx.error(); toast('Tes tours pour ce repas sont utilisés. Reviens demain, ou passe à Plus.'); return; }
   // Tirage pondéré : plus la case est grande, plus le plat a de chances de sortir
   let r = Math.random(), idx = 0; for (; idx < items.length - 1; idx++) { r -= items[idx].share; if (r <= 0) break; }
   const starts = []; let acc = 0; items.forEach((x) => { starts.push(acc); acc += x.share * 360; });
   const target = starts[idx] + items[idx].share * 360 * (0.2 + Math.random() * 0.6);
   const from = W.rot, base = ((360 - target - (from % 360)) % 360 + 360) % 360;
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const to = from + base + (reduce ? 360 : 360 * 5), T = reduce ? 900 : 4600;
+  const reduce = S.wheelSkip || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const to = from + base + (reduce ? 360 : 360 * 5), T = S.wheelSkip ? 350 : reduce ? 900 : 4600;
+  S.wheelUse = Object.assign(Object.fromEntries(Object.entries(S.wheelUse).filter(([k]) => k.startsWith(dayKey(now())))), { [useKey]: (S.wheelUse[useKey] || 0) + 1 }); persist();
   W.spinning = true; W.msg = W.spins >= 1 ? KALOU_RESPIN[Math.min(W.spins - 1, 2)] : null; W.result = null; U.open = null;
   render();
   const disc = document.getElementById('wheel-disc');
@@ -508,6 +515,7 @@ if (S.onboarded && S.profile.assessedAt && VIEWS[h0] && !['onb', 'setup'].includ
 render(false);
 sync();
 setInterval(() => { if (TAB_SCREENS.includes(U.screen) && !U.wheel.spinning) render(); }, 60000);
+setInterval(() => { const el = document.getElementById('wheel-count'); if (el) { const t = untilMidnight(); el.textContent = t; if (t === '00:00:00' || t.startsWith('23:59:5')) render(); } }, 1000);
 if (S.trial && !S.trial.cancelledAt && navigator.onLine) {
   api.getProfile().then((p) => { if (p && p.trial_started_at) { S.trial = { plan: p.trial_plan, startedAt: p.trial_started_at, cancelledAt: p.trial_cancelled_at }; persist(); render(); } }).catch(() => {});
 }
