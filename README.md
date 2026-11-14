@@ -71,3 +71,10 @@ Ils s'affichent automatiquement. En leur absence, l'app montre une pastille aux 
 - **La roue de Kalou** : choisis le moment et le temps disponible, la roue ne contient que des plats sûrs pour ton profil et de ton pays. La taille de chaque case dépend de l'intérêt du plat pour ton bilan. 3 relances, puis « Je le prépare » l'ajoute au menu du jour.
 - **Paiement par pays** : opérateurs, indicatif et longueur du numéro selon le pays.
 - Base : colonne `country` ajoutée à `ma_profiles`.
+
+## Voix humaines (Azure Speech, offre gratuite)
+
+- Fonction serveur `supabase/functions/ma-tts` : fabrique l'audio avec les voix neuronales Microsoft (Denise, Henri, Vivienne, Rémy). La clé reste sur le serveur.
+- Chaque audio est gardé (bucket privé `ma-tts`) et réutilisé pour tout le monde : un conseil ou une recette n'est fabriqué qu'une fois.
+- Plafonds : 450 000 caractères par mois au total (l'offre gratuite en donne 500 000), 60 nouvelles synthèses par téléphone et par jour.
+- Secrets à renseigner dans Supabase : `AZURE_SPEECH_KEY` et `AZURE_SPEECH_REGION`. Sans eux, l'app utilise la voix du téléphone.

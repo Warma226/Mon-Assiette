@@ -83,7 +83,7 @@ function computed() {
     return (dayCache[off] = planDay(d, S.profile, A, S.swaps, k, S.picks).map((m) => Object.assign({}, m, { takenAt: logs[m.slot] || null })));
   };
   return {
-    A, isPlus, dateAt, day, dark: isDark(), voices: voice.voices(), voiceNow: voice.bestVoice(), prettyVoice: voice.prettyName, now: now(), slotNow: slotNow(), country: countryOf(), payMethods: payMethods(),
+    A, isPlus, dateAt, day, dark: isDark(), voices: voice.voices(), voiceNow: voice.bestVoice(), prettyVoice: voice.prettyName, cloudVoices: voice.CLOUD_VOICES, cloudVoice: voice.cloudVoice(), cloudOff: voice.cloudOff(), now: now(), slotNow: slotNow(), country: countryOf(), payMethods: payMethods(),
     wheel: (slot, maxMin) => wheelItems(slot, S.profile, A, dateAt(0), maxMin),
     wheelLeft: (slot) => 4 - (S.wheelUse[dayKey(now()) + ':' + slot] || 0),
     untilMidnight: untilMidnight(),
@@ -306,7 +306,7 @@ const ACT = {
   speak() { readAloud('tip', computed().tip()); },
   speakMsg(i) { const m = S.chat[+i]; if (m) readAloud('msg' + i, m.text); },
   speakRecipe(k) { const m = recipeMeal(k); if (m) readAloud('recipe', `${m.name}. ${m.desc || ''} Il te faut : ${(m.ing || []).join(', ')}. ${(HOW[m.id] || []).map((x, i) => 'Étape ' + (i + 1) + '. ' + x).join(' ')} Bon appétit !`); },
-  pickVoice(uri) { S.voice = uri; voice.setVoice(uri); persist(); readAloud('test', `Bonjour ${S.profile.name || ''} ! Je suis Kalou. Aujourd'hui, on mange bien, et on se fait plaisir.`); render(); },
+  pickVoice(uri) { S.voice = uri; applyVoice(); persist(); readAloud('test', `Bonjour ${S.profile.name || ''} ! Je suis Kalou. Aujourd'hui, on mange bien, et on se fait plaisir.`); render(); },
   testVoice() { readAloud('test', `Bonjour ${S.profile.name || ''} ! Je suis Kalou. Aujourd'hui, on mange bien, et on se fait plaisir.`); },
   themeInfo() { const th = computed().theme(0); sfx.tap(); toast(th.title + ' : ' + th.why); },
   streakInfo() { const n = computed().streak; sfx.tap(); toast(n ? `${n} jour${n > 1 ? 's' : ''} de suite avec au moins 2 repas notés. Continue !` : 'Note au moins 2 repas aujourd’hui pour démarrer ta série.'); },
@@ -408,12 +408,20 @@ const ACT = {
 };
 
 /* ---------- Voix de Kalou ---------- */
-voice.setVoice(S.voice);
+// Voix : « cloud:denise » = voix premium du serveur, sinon une voix du téléphone
+if (S.voice == null) S.voice = 'cloud:denise';
+const applyVoice = () => {
+  const cl = String(S.voice || '').startsWith('cloud:');
+  voice.setCloud({ url: CONFIG.supabaseUrl + '/functions/v1/ma-tts', key: CONFIG.supabaseKey, device: S.deviceId, voice: cl ? S.voice.slice(6) : null });
+  voice.setVoice(cl ? null : S.voice);
+};
+applyVoice();
+voice.probe().then(() => { if (U.screen === 'profile') render(); });
 voice.onVoices(() => { if (U.screen === 'profile') render(); });
 function readAloud(key, text) {
   if (!voice.supported()) { toast("La lecture audio n'est pas disponible sur ce téléphone."); return; }
   if (U.speaking === key) { voice.stop(); U.speaking = null; render(); return; }
-  if (!voice.voices().length) toast('Astuce : installe une voix française dans les réglages du téléphone pour une voix plus naturelle.');
+  if (!voice.cloudVoice() && !voice.voices().length) toast('Astuce : installe une voix française dans les réglages du téléphone pour une voix plus naturelle.');
   U.speaking = key; render();
   voice.say(text, { onEnd: () => { if (U.speaking === key) { U.speaking = null; render(); } } });
 }
