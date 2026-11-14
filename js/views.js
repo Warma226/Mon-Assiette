@@ -464,6 +464,7 @@ export function profile(S, U, C) {
       <button class="li tap" data-act="editProfile"><span class="row">${img3d('counterclockwise-arrows-button', 28)}<b>Refaire mon bilan</b></span>›</button>
       <button class="li tap" data-act="askCountry"><span class="row">${img3d('alarm-clock', 28)}<span><b>${C.country ? esc(C.country.label) : 'Choisir mon pays'}</b><small>${C.country ? 'Heure de l’app : ' + hhmm(C.now) + ' (' + C.country.gmt + ')' : 'Pour ton menu et ton heure'}</small></span></span>›</button>
       <button class="li tap" data-act="toggleSound" role="switch" aria-checked="${S.sound}"><span class="row">${img3d(S.sound ? 'speaker-high-volume' : 'muted-speaker', 28)}<b>Sons</b></span><span class="switch ${S.sound ? 'on' : ''}"><i></i></span></button>
+      <div class="li"><span class="row">${img3d(C.dark ? 'crescent-moon' : 'sun', 28)}<b>Apparence</b></span><span class="theme-seg">${[['clair', 'Clair'], ['sombre', 'Sombre'], ['auto', 'Auto']].map(([k, l]) => `<button class="tap ${(S.theme || 'clair') === k ? 'on' : ''}" data-act="setTheme" data-arg="${k}" aria-pressed="${(S.theme || 'clair') === k}">${l}</button>`).join('')}</span></div>
     </div>
     <div class="card fu d3 stack ${C.isPlus ? 'dark' : ''}">
       <small class="kicker">ABONNEMENT</small>
@@ -546,14 +547,14 @@ export function wheel(S, U, C) {
   const left = C.wheelLeft(slot), unlimited = C.isPlus, spent = !unlimited && left <= 0;
   const R = 140, cx = 150, cy = 150, rad = (x) => (x - 90) * Math.PI / 180;
   let acc = 0;
-  const defs = items.map((_, i) => `<radialGradient id="wg${i}" cx="150" cy="150" r="140" gradientUnits="userSpaceOnUse"><stop offset="0.25" stop-color="#121815"/><stop offset="0.72" stop-color="${WCOL[i % 8]}" stop-opacity=".28"/><stop offset="1" stop-color="${WCOL[i % 8]}" stop-opacity=".62"/></radialGradient>`).join('');
+  const defs = items.map((_, i) => `<radialGradient id="wg${i}" cx="150" cy="150" r="140" gradientUnits="userSpaceOnUse"><stop offset="0.25" style="stop-color:var(--wseg)"/><stop offset="0.72" stop-color="${WCOL[i % 8]}" style="stop-opacity:var(--wseg-mid)"/><stop offset="1" stop-color="${WCOL[i % 8]}" style="stop-opacity:var(--wseg-edge)"/></radialGradient>`).join('');
   const segs = items.map((m, i) => {
     const a = acc, b = acc + m.share * 360; acc = b;
     const mid = (a + b) / 2, large = b - a > 180 ? 1 : 0;
     const p1 = [cx + R * Math.cos(rad(a)), cy + R * Math.sin(rad(a))], p2 = [cx + R * Math.cos(rad(b)), cy + R * Math.sin(rad(b))];
     const sz = Math.max(30, Math.min(56, (b - a) * 0.9));
     const path = items.length === 1 ? `<circle cx="${cx}" cy="${cy}" r="${R}" fill="url(#wg${i})"/>`
-      : `<path d="M${cx} ${cy} L${p1[0].toFixed(2)} ${p1[1].toFixed(2)} A${R} ${R} 0 ${large} 1 ${p2[0].toFixed(2)} ${p2[1].toFixed(2)}Z" fill="url(#wg${i})" stroke="#0B100D" stroke-width="5" stroke-linejoin="round"/>`;
+      : `<path d="M${cx} ${cy} L${p1[0].toFixed(2)} ${p1[1].toFixed(2)} A${R} ${R} 0 ${large} 1 ${p2[0].toFixed(2)} ${p2[1].toFixed(2)}Z" fill="url(#wg${i})" style="stroke:var(--wring)" stroke-width="5" stroke-linejoin="round"/>`;
     const badge = m.min ? `${m.min >= 60 ? Math.floor(m.min / 60) + 'h' + (m.min % 60 ? String(m.min % 60).padStart(2, '0') : '') : m.min + '′'}` : '';
     const bw = badge.length * 7 + 14;
     return `${path}<g transform="rotate(${mid.toFixed(1)} ${cx} ${cy})">
@@ -576,7 +577,7 @@ export function wheel(S, U, C) {
     : `<button class="wheel-cta tap" data-act="spin" ${W.spinning ? 'aria-disabled="true"' : ''}>${W.spinning ? 'Ça tourne…' : res ? 'Relancer la roue' : 'Tourner la roue'} ${img3d('sparkles', 26)}</button>`;
   return `<section class="wheel-page">
     <div class="wp-top">
-      <button class="wp-close tap" data-act="go" data-arg="home" aria-label="Fermer">${icon('back', 22, '#fff', 2)}</button>
+      <button class="wp-close tap" data-act="go" data-arg="home" aria-label="Fermer">${icon('back', 22, '#141614', 2)}</button>
       <small class="wp-kicker">${unlimited ? 'Tours illimités avec Plus' : '1 tour + 3 relances par repas'}</small>
       <span class="wp-spacer"></span>
     </div>
@@ -588,9 +589,9 @@ export function wheel(S, U, C) {
       <svg class="wheel-pointer" viewBox="0 0 60 52" aria-hidden="true"><path d="M8 6 H52 L30 44 Z" fill="rgba(255,210,90,.18)" stroke="#FFD25A" stroke-width="5" stroke-linejoin="round"/></svg>
       <svg class="wheel-svg" viewBox="0 0 300 300" role="img" aria-label="Roue de ${items.length} plats">
         <defs>${defs}</defs>
-        <circle cx="150" cy="150" r="149" fill="#0B100D"/>
+        <circle cx="150" cy="150" r="149" style="fill:var(--wring)"/>
         <g id="wheel-disc" style="transform:rotate(${W.rot}deg);transform-origin:150px 150px">${segs}</g>
-        <circle cx="150" cy="150" r="56" fill="#0B100D"/>
+        <circle cx="150" cy="150" r="56" style="fill:var(--wring)"/>
       </svg>
       <button class="spin-hub tap" id="spin-btn" data-act="spin" ${W.spinning || spent ? 'aria-disabled="true"' : ''} aria-label="Tourner la roue">${hub}</button>
     </div>

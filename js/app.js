@@ -82,7 +82,7 @@ function computed() {
     return (dayCache[off] = planDay(d, S.profile, A, S.swaps, k, S.picks).map((m) => Object.assign({}, m, { takenAt: logs[m.slot] || null })));
   };
   return {
-    A, isPlus, dateAt, day, now: now(), slotNow: slotNow(), country: countryOf(), payMethods: payMethods(),
+    A, isPlus, dateAt, day, dark: isDark(), now: now(), slotNow: slotNow(), country: countryOf(), payMethods: payMethods(),
     wheel: (slot, maxMin) => wheelItems(slot, S.profile, A, dateAt(0), maxMin),
     wheelLeft: (slot) => 4 - (S.wheelUse[dayKey(now()) + ':' + slot] || 0),
     untilMidnight: untilMidnight(),
@@ -130,6 +130,9 @@ function computed() {
 
 /* ---------- Rendu ---------- */
 const root = document.getElementById('app');
+const darkMQ = matchMedia('(prefers-color-scheme: dark)');
+const isDark = () => S.theme === 'sombre' || (S.theme === 'auto' && darkMQ.matches);
+darkMQ.addEventListener?.('change', () => { if (S.theme === 'auto') render(); });
 const scroller = () => root.querySelector('.scroll');
 const TAB_SCREENS = ['home', 'plan', 'cook', 'market', 'profile'];
 const VIEWS = { wheel: V.wheel, onb: V.onboarding, setup: V.setup, bilan: V.bilan, home: V.home, plan: V.plan, cook: V.cook, market: V.market, chat: V.chat, profile: V.profile, offers: V.offers };
@@ -137,7 +140,10 @@ function render(keepScroll = true) {
   const C = computed(), prev = scroller();
   const top = keepScroll && !U.enter && prev ? prev.scrollTop : 0;
   const tabs = TAB_SCREENS.includes(U.screen);
-  root.className = 'app' + (U.enter ? ' enter' : '') + (U.screen === 'wheel' ? ' dark' : '');
+  const dark = isDark();
+  root.className = 'app' + (U.enter ? ' enter' : '') + (dark ? ' theme-dark' : '');
+  document.documentElement.classList.toggle('theme-dark', dark);
+  const mt = document.querySelector('meta[name=theme-color]'); if (mt) mt.content = dark ? '#0E1410' : '#2C7546';
   root.innerHTML = SHARED_DEFS + `<main class="scroll ${tabs ? 'has-tabs' : ''}" id="main" tabindex="-1">${VIEWS[U.screen](S, U, C)}</main>` + (tabs ? V.tabbar(U.screen) : '');
   const sc = scroller(); if (sc) sc.scrollTop = top;
   if (U.screen === 'chat') { const l = document.getElementById('chat-list'); if (l) l.scrollTop = l.scrollHeight; }
@@ -358,6 +364,7 @@ const ACT = {
   wheelSlot(a) { Object.assign(U.wheel, { slot: a, spins: 0, result: null, msg: null }); U.open = null; sfx.tick(); render(); },
   wheelTime(a) { Object.assign(U.wheel, { time: +a, spins: 0, result: null, msg: null }); U.open = null; sfx.tick(); render(); },
   spin() { spinWheel(); },
+  setTheme(a) { S.theme = a; sfx.toggle(a !== 'clair'); persist(); render(); },
   wheelSkip() { S.wheelSkip = !S.wheelSkip; sfx.toggle(S.wheelSkip); persist(); render(); },
   wheelRecipe() { U.open = U.open === 'wheel' ? null : 'wheel'; sfx.tap(); render(); },
   wheelPick() {
