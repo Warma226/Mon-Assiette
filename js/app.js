@@ -1,5 +1,5 @@
 import { SHARED_DEFS } from './art.js';
-import { HOW, SLOT_ORDER, MAIN_SLOTS, SLOT_INFO, NUTRIENTS, TAG_BENEFIT, DISHES, CHAT_CHIPS, DAY_THEMES, COUNTRIES, OPERATORS, APPETITE_TIPS } from './content.js';
+import { HOW, SLOT_ORDER, MAIN_SLOTS, SLOT_INFO, NUTRIENTS, TAG_BENEFIT, DISHES, CHAT_CHIPS, DAY_THEMES, COUNTRIES, OPERATORS, APPETITE_TIPS, PLANS, PLAN_NAMES } from './content.js';
 import { assess, planDay, missionFor, tipsFor, shopping, cookWith, slotNow, wheelItems } from './engine.js';
 import { now, setTZ, hhmm } from './time.js';
 import * as voice from './voice.js';
@@ -70,6 +70,10 @@ function streak() {
   if (!active(dayKey(d))) d.setDate(d.getDate() - 1);
   while (active(dayKey(d)) && n < 999) { n++; d.setDate(d.getDate() - 1); }
   return n;
+}
+function logSub(e) {
+  const plan = e.plan && PLANS.find((p) => p.id === e.plan);
+  S.subLog = (S.subLog || []).concat(Object.assign({ at: new Date().toISOString(), amount: plan && e.t === 'pay' ? plan.price + ' CFA' : '' }, e)).slice(-30);
 }
 function computed() {
   const A = analysis();
@@ -143,7 +147,7 @@ const isDark = () => S.theme === 'sombre' || (S.theme === 'auto' && darkMQ.match
 darkMQ.addEventListener?.('change', () => { if (S.theme === 'auto') render(); });
 const scroller = () => root.querySelector('.scroll');
 const TAB_SCREENS = ['home', 'plan', 'cook', 'market', 'profile'];
-const VIEWS = { wheel: V.wheel, onb: V.onboarding, setup: V.setup, bilan: V.bilan, home: V.home, plan: V.plan, cook: V.cook, market: V.market, chat: V.chat, profile: V.profile, offers: V.offers };
+const VIEWS = { wheel: V.wheel, onb: V.onboarding, setup: V.setup, bilan: V.bilan, home: V.home, plan: V.plan, cook: V.cook, market: V.market, chat: V.chat, profile: V.profile, offers: V.offers, abonnement: V.abonnement };
 function render(keepScroll = true) {
   const C = computed(), prev = scroller();
   const top = keepScroll && !U.enter && prev ? prev.scrollTop : 0;
@@ -391,14 +395,14 @@ const ACT = {
       await flush(S, api);
       const r = await api.startTrial(U.offerPlan);
       if (!r || !r.ok) { sfx.error(); toast(r && r.error === 'trial_used' ? 'Tu as déjà utilisé ton essai gratuit sur ce téléphone.' : "Impossible d'activer l'essai pour le moment."); return; }
-      S.trial = { plan: r.plan, startedAt: r.started_at, cancelledAt: null }; persist(); sync();
+      S.trial = { plan: r.plan, startedAt: r.started_at, cancelledAt: null }; logSub({ t: 'trial', label: 'Essai Plus 72 h démarré' }); persist(); sync();
       go('home'); celebrate(true); toast('Essai Plus activé : 72 h offertes, sans engagement.');
     } catch (e) { sfx.error(); toast('Connexion instable. Réessaie dans un instant.'); }
   },
   async cancelTrial() {
     if (!confirm('Arrêter ton essai Plus ? Tu ne paieras rien.')) return;
     try { await api.cancelTrial(); } catch (e) { /* arrêt local quand même */ }
-    if (S.trial) S.trial.cancelledAt = new Date().toISOString();
+    if (S.trial) S.trial.cancelledAt = new Date().toISOString(); logSub({ t: 'stop', label: 'Essai arrêté' });
     persist(); render(); toast('Essai arrêté. Tu ne paieras rien.');
   },
   notifyMe() { const pm = payMethods().find((x) => x.id === U.pay) || payMethods()[0]; S.pay = { method: pm.id, phone: (pm.dial || '') + U.phone.replace(/\D/g, '') }; enqueue(S, { t: 'pay', method: S.pay.method, phone: S.pay.phone }); persist(); sync(); sfx.success(); toast("C'est noté ! On te prévient dès l'ouverture du paiement."); },
@@ -418,6 +422,27 @@ const ACT = {
       U.licKey = t.slice(0, 120); sfx.tick(); render();
     } catch (e) { toast('Appuie longuement dans la case puis « Coller ».'); document.querySelector('[data-input=licKey]')?.focus(); }
   },
+  async copyKey() {
+    if (!S.lastKey) return;
+    try { await navigator.clipboard.writeText(S.lastKey); sfx.success(); toast('Clé copiée. Garde-la précieusement.'); }
+    catch (e) { toast('Ta clé : ' + S.lastKey); }
+  },
+  async syncPlus() {
+    if (!navigator.onLine) { sfx.error(); toast('Connexion internet nécessaire.'); return; }
+    if (U.syncing) return;
+    U.syncing = true; render();
+    try {
+      await flush(S, api);
+      const p = await api.getProfile();
+      if (p && p.plus_until && new Date(p.plus_until) > new Date()) {
+        const isNew = !S.plus || S.plus.until !== p.plus_until;
+        if (isNew) logSub({ t: 'pay', label: (PLAN_NAMES[p.plus_plan] || 'Mon Assiette Plus') + ' · restauré', plan: p.plus_plan, until: p.plus_until });
+        S.plus = { plan: p.plus_plan, until: p.plus_until }; persist(); sfx.success();
+        toast('Plus est actif jusqu’au ' + new Date(p.plus_until).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) + '.');
+      } else { sfx.error(); toast('Aucun abonnement actif trouvé pour ce téléphone. Si tu as payé, active ta clé.'); U.showKey = true; }
+    } catch (e) { sfx.error(); toast('Connexion instable. Réessaie dans un instant.'); }
+    U.syncing = false; render();
+  },
   faq(a) { U.faq = U.faq === +a ? null : +a; sfx.tap(); render(); },
   toggleKey() { U.showKey = !U.showKey; sfx.tap(); render(); },
   async activateKey() {
@@ -430,7 +455,8 @@ const ACT = {
       await flush(S, api);
       const r = await api.license({ key });
       if (r.ok) {
-        S.plus = { plan: r.plan, until: r.until }; U.licKey = ''; U.showKey = false; persist();
+        if (!r.already) logSub({ t: 'pay', label: (PLAN_NAMES[r.plan] || 'Mon Assiette Plus') + ' · clé activée', plan: r.plan, until: r.until });
+        S.plus = { plan: r.plan, until: r.until }; S.lastKey = key; U.licKey = ''; U.showKey = false; persist();
         go('home'); celebrate(true);
         toast(r.already ? 'Cette clé est déjà active sur ce téléphone.' : 'Clé activée ! Mon Assiette Plus est actif jusqu’au ' + new Date(r.until).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) + '.');
       } else {
@@ -607,7 +633,7 @@ async function payCheck() {
     try {
       const r = await api.pay({ action: 'status', token: pend.token });
       if (r.ok && r.status === 'completed') {
-        S.plus = { plan: r.plan, until: r.until }; S.pendingPay = null; persist();
+        logSub({ t: 'pay', label: (PLAN_NAMES[r.plan] || 'Mon Assiette Plus') + ' · Mobile Money', plan: r.plan, until: r.until }); S.plus = { plan: r.plan, until: r.until }; S.pendingPay = null; persist();
         go('home'); celebrate(true); toast('Paiement reçu ! Mon Assiette Plus est actif jusqu’au ' + new Date(r.until).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) + '.');
       } else if (r.ok && (r.status === 'cancelled' || r.status === 'failed')) {
         S.pendingPay = null; persist(); sfx.error(); toast(r.status === 'cancelled' ? 'Paiement annulé. Tu n’as rien payé.' : 'Le paiement n’a pas abouti. Tu n’as rien payé.');

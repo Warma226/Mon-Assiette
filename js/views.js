@@ -464,7 +464,7 @@ export function profile(S, U, C) {
   };
   return `<section class="page">
     ${header('Mon profil')}
-    <div class="card-hero fu d2"><span class="avatar xl">${esc(initials)}</span><div class="grow"><b class="h2">${esc(p.name)}</b><small class="muted">${C.A.priorities.map((x) => x.title).join(' · ')}</small>${C.isPlus ? pill('Essai Plus actif', 'dark') : pill('Formule gratuite', 'plan')}</div></div>
+    <div class="card-hero fu d2"><span class="avatar xl">${esc(initials)}</span><div class="grow"><b class="h2">${esc(p.name)}</b><small class="muted">${C.A.priorities.map((x) => x.title).join(' · ')}</small>${C.paid ? pill('Plus actif', 'dark') : C.trialOn ? pill('Essai Plus actif', 'dark') : pill('Formule gratuite', 'plan')}</div></div>
     <div class="card list fu d3">
       <button class="li tap" data-act="go" data-arg="bilan"><span class="row">${img3d('clipboard', 28)}<b>Mon bilan nutritionnel</b></span>›</button>
       <button class="li tap" data-act="editProfile"><span class="row">${img3d('counterclockwise-arrows-button', 28)}<b>Refaire mon bilan</b></span>›</button>
@@ -476,14 +476,10 @@ export function profile(S, U, C) {
       ${C.voices.length ? `<div class="voice-list"><small class="vl-title">${C.cloudOff ? 'Voix du téléphone' : 'Sans internet : voix du téléphone'}</small>${C.voices.slice(0, 5).map((v) => `<button class="pl tap ${S.voice === v.voiceURI ? 'on' : ''}" data-act="pickVoice" data-arg="${esc(v.voiceURI)}">${esc(C.prettyVoice(v))}</button>`).join('')}</div>` : ''}
       <div class="li"><span class="row">${img3d(C.dark ? 'crescent-moon' : 'sun', 28)}<b>Apparence</b></span><span class="theme-seg">${[['clair', 'Clair'], ['sombre', 'Sombre'], ['auto', 'Auto']].map(([k, l]) => `<button class="tap ${(S.theme || 'clair') === k ? 'on' : ''}" data-act="setTheme" data-arg="${k}" aria-pressed="${(S.theme || 'clair') === k}">${l}</button>`).join('')}</span></div>
     </div>
-    <div class="card fu d3 stack ${C.isPlus ? 'dark' : ''}">
-      <small class="kicker">ABONNEMENT</small>
-      <b class="h3">${C.paid ? (PLAN_NAMES[C.paidPlan] || 'Mon Assiette Plus') + ' · actif' : C.trialOn ? PLAN_NAMES[S.trial.plan] + ' · essai gratuit' : C.orgName ? 'Accès offert par ' + esc(C.orgName) : 'Formule gratuite'}</b>
-      <small>${C.paid ? `Encore ${C.daysLeft} jour${C.daysLeft > 1 ? 's' : ''}, jusqu’au ${C.paidUntil.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: C.paidUntil.getFullYear() !== C.now.getFullYear() ? 'numeric' : undefined })}.` : C.trialOn ? `Il te reste ${C.hoursLeft} h d'essai. Aucun paiement pendant l'essai.` : C.trialUsed ? 'Ton essai est terminé. Continue avec Plus en payant par Mobile Money.' : 'Bilan, plan du jour, défis et suivi sont gratuits.'}</small>
-      ${C.paid ? `<button class="btn-light tap" data-act="go" data-arg="offers">Prolonger</button>` : C.trialOn ? `<div class="thin-bar light"><div style="width:${Math.round(C.hoursLeft / 72 * 100)}%"></div></div><div class="row"><button class="btn-light tap" data-act="go" data-arg="offers">Changer de formule</button><button class="btn-ghost tap" data-act="cancelTrial">Arrêter l'essai</button></div>`
-      : `<button class="btn-dark tap" data-act="go" data-arg="offers">${C.trialUsed ? 'Voir les offres' : 'Essayer Plus 72 h gratuit'}</button>`}
-      ${!C.paid ? `<button class="link sm" data-act="openKey">J’ai une clé Plus</button>` : ''}
-    </div>
+    <button class="abo-link ${C.paid ? 'on' : C.trialOn ? 'trial' : ''} tap fu d3" data-act="go" data-arg="abonnement">
+      <span class="abo-link-ic">${img3d(C.isPlus ? 'trophy' : 'credit-card', 26)}</span>
+      <span class="grow"><small>MON ABONNEMENT</small><b>${C.paid ? (PLAN_NAMES[C.paidPlan] || 'Mon Assiette Plus') + ' · actif' : C.trialOn ? 'Essai Plus · ' + C.hoursLeft + ' h restantes' : C.orgName ? 'Accès offert par ' + esc(C.orgName) : 'Formule gratuite'}</b><em>${C.paid ? 'Encore ' + C.daysLeft + ' jour' + (C.daysLeft > 1 ? 's' : '') : 'Statut, clé, historique, aide'}</em></span>
+      ${icon('next', 18, 'currentColor', 2.2)}</button>
     <div class="fu d4 stack"><h2 class="sec-title">Rappels au moment idéal</h2>
       <div class="card list">${toggles.map((t) => `<button class="li tap" data-act="toggleNotif" data-arg="${t[0]}" role="switch" aria-checked="${!!p.notif[t[0]]}"><span class="grow"><b>${t[1]}</b><small>${t[2]}</small></span><span class="switch ${p.notif[t[0]] ? 'on' : ''}"><i></i></span></button>`).join('')}</div>
       <small class="muted">Les rappels s'affichent quand l'app est ouverte ou installée.</small></div>
@@ -497,7 +493,95 @@ export function profile(S, U, C) {
       </div>
       ${U.info ? `<div class="note popnow">${ABOUT[U.info]}</div>` : ''}</div>
     <button class="btn-danger tap" data-act="wipe">Effacer mes données et recommencer</button>
-    <p class="fine">Mon Assiette · version 4.0 · Icônes Font Awesome (CC BY 4.0)</p>
+    <p class="fine">Mon Assiette · version 4.1 · Icônes Font Awesome (CC BY 4.0)</p>
+  </section>`;
+}
+
+/* ================= Mon abonnement ================= */
+export function abonnement(S, U, C) {
+  const fmt = (d, y) => new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: y ? 'numeric' : undefined });
+  const lastPlan = S.plus && S.plus.plan;
+  const expired = !C.paid && S.plus && S.plus.until;
+  let state, kicker, title, sub, pct = 0, big = '', unit = '';
+  if (C.paid) {
+    const total = C.paidPlan === 'semaine' ? 7 : C.paidPlan === 'trimestre' ? 90 : C.paidPlan === 'annee' ? 365 : 30;
+    state = 'on'; kicker = 'ACTIF'; title = PLAN_NAMES[C.paidPlan] || 'Mon Assiette Plus';
+    big = C.daysLeft; unit = C.daysLeft > 1 ? 'jours restants' : 'jour restant';
+    sub = 'Jusqu’au ' + fmt(C.paidUntil, true); pct = Math.min(100, Math.round(C.daysLeft / total * 100));
+  } else if (C.trialOn) {
+    state = 'trial'; kicker = 'ESSAI GRATUIT'; title = 'Essai Plus · 72 h';
+    big = C.hoursLeft; unit = C.hoursLeft > 1 ? 'heures restantes' : 'heure restante';
+    sub = 'Aucun paiement pendant l’essai'; pct = Math.round(C.hoursLeft / 72 * 100);
+  } else if (expired) {
+    state = 'off'; kicker = 'TERMINÉ'; title = (PLAN_NAMES[lastPlan] || 'Mon Assiette Plus') + ' · expiré';
+    sub = 'Terminé le ' + fmt(S.plus.until, true) + '. Tes données sont gardées : reprends quand tu veux.';
+  } else if (C.orgName) {
+    state = 'org'; kicker = 'ACCÈS OFFERT'; title = 'Offert par ' + esc(C.orgName); sub = 'Grâce au code de ton entreprise ou de ta mutuelle.';
+  } else {
+    state = 'free'; kicker = 'FORMULE GRATUITE'; title = 'Mon Assiette'; sub = C.trialUsed ? 'Ton essai est terminé. Passe à Plus quand tu veux.' : 'Bilan, plan du jour, défis et suivi : gratuits pour toujours.';
+  }
+  const R = 46, L = 2 * Math.PI * R;
+  const ring = big !== '' ? `<div class="abo-ring"><svg viewBox="0 0 108 108" width="108" height="108"><circle cx="54" cy="54" r="${R}" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="9"/><circle cx="54" cy="54" r="${R}" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-dasharray="${(L * pct / 100).toFixed(1)} ${L.toFixed(1)}" transform="rotate(-90 54 54)"/></svg><span><b>${big}</b><small>${unit}</small></span></div>`
+    : `<div class="abo-kalou">${kalou(state === 'off' ? 'clin' : 'joie', 96)}</div>`;
+
+  const actions = C.paid ? `<button class="abo-main tap" data-act="go" data-arg="offers">Prolonger mon abonnement</button><small class="abo-hint">Les jours achetés s’ajoutent à ceux qui restent.</small>`
+    : C.trialOn ? `<button class="abo-main tap" data-act="go" data-arg="offers">Garder Plus après l’essai</button><button class="abo-sec tap" data-act="cancelTrial">Arrêter l’essai</button>`
+    : `<button class="abo-main tap" data-act="go" data-arg="offers">${expired ? 'Reprendre Plus' : C.trialUsed ? 'Passer à Plus' : 'Essayer Plus 72 h gratuit'}</button>`;
+
+  const wheelLeft = C.isPlus ? null : Math.max(0, C.wheelLeft(C.slotNow));
+  const imp = C.improvesThisWeek();
+  const usage = [
+    ['party-popper', 'Roue de Kalou', C.isPlus ? 'Illimitée' : `${wheelLeft} tour${wheelLeft > 1 ? 's' : ''} restant${wheelLeft > 1 ? 's' : ''} pour ce repas`, C.isPlus ? 100 : wheelLeft / 4 * 100],
+    ['counterclockwise-arrows-button', 'Plats améliorés', C.isPlus ? `${imp} cette semaine · illimité` : `${imp} / 3 cette semaine`, C.isPlus ? 100 : Math.max(0, (3 - imp) / 3 * 100)],
+    ['spiral-calendar', 'Plan de 7 jours', C.isPlus ? 'Ouvert' : 'Avec Plus', C.isPlus ? 100 : 0],
+    ['basket', 'Courses de la semaine', C.isPlus ? 'Ouvertes' : '2 jours seulement', C.isPlus ? 100 : 28]
+  ];
+
+  const log = (S.subLog || []).slice().reverse();
+  const keyMask = S.lastKey ? S.lastKey.slice(0, 4) + ' •••• ' + S.lastKey.slice(-4) : '';
+  const keyOpen = U.showKey;
+
+  return `<section class="page abo">
+    ${header('Mon abonnement', { back: 'profile' })}
+
+    <div class="abo-hero ${state} fu d2">
+      <div class="abo-txt"><small>${kicker}</small><b>${title}</b><span>${sub}</span></div>
+      ${ring}
+    </div>
+
+    <div class="abo-actions fu d2">${actions}</div>
+
+    <div class="fu d3 stack"><h2 class="sec-title">Mon utilisation</h2>
+      <div class="card list">${usage.map((u) => `<div class="li abo-use"><span class="row">${img3d(u[0], 26)}<span><b>${u[1]}</b><small>${u[2]}</small></span></span><span class="abo-bar"><i style="width:${Math.round(u[3])}%"></i></span></div>`).join('')}</div></div>
+
+    <div class="fu d3 stack"><h2 class="sec-title">Gratuit ou Plus</h2>
+      <div class="card abo-cmp"><div class="abo-row head"><span></span><b>Gratuit</b><b class="plus">Plus</b></div>
+      ${FEATURES.map((f) => `<div class="abo-row"><span>${f[0]}</span><em>${f[1] === '✓' ? icon('check', 15, '#2C7546', 2.6) : f[1] === '—' ? '<i class="no">—</i>' : f[1]}</em><em class="plus">${f[2] === '✓' ? icon('check', 15, '#fff', 2.6) : f[2]}</em></div>`).join('')}</div></div>
+
+    <div class="fu d4 stack"><h2 class="sec-title">Ma clé Plus</h2>
+      <div class="card stack abo-key">
+        ${keyMask ? `<div class="li"><span class="row">${img3d('shield', 26)}<span><b class="mono">${esc(keyMask)}</b><small>Active sur ce téléphone · preuve d’achat</small></span></span><button class="chip-btn light tap" data-act="copyKey">Copier</button></div>` : `<small class="muted">Après un paiement, ta clé arrive à l’écran et par e-mail. Colle-la ici pour activer Plus.</small>`}
+        <button class="link-row" data-act="toggleKey"><b>${img3d('sparkles', 20)} ${keyMask ? 'Activer une nouvelle clé' : 'J’ai une clé à activer'}</b><span>${keyOpen ? '˄' : '›'}</span></button>
+        ${keyOpen ? `<form class="stack" data-form="lic">
+          <div class="key-row"><input class="field" type="text" value="${esc(C.licKey)}" placeholder="Colle ta clé ici" data-input="licKey" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="120" aria-label="Clé d’activation">
+            <button type="button" class="chip-btn light tap" data-act="pasteKey">Coller</button></div>
+          <button type="submit" class="btn-dark tap" ${C.licBusy ? 'disabled' : ''}>${C.licBusy ? 'Vérification…' : 'Activer ma clé'}</button></form>` : ''}
+      </div></div>
+
+    <div class="fu d4 stack"><h2 class="sec-title">Historique</h2>
+      <div class="card list">${log.length ? log.slice(0, 8).map((e) => `<div class="li"><span class="row">${img3d(e.t === 'trial' ? 'alarm-clock' : e.t === 'stop' ? 'warning' : 'credit-card', 24)}<span><b>${esc(e.label)}</b><small>${fmt(e.at, true)}${e.until ? ' · jusqu’au ' + fmt(e.until, true) : ''}</small></span></span>${e.amount ? `<em class="abo-amt">${esc(e.amount)}</em>` : ''}</div>`).join('')
+        : `<div class="li"><small class="muted">Aucun paiement pour l’instant.</small></div>`}</div></div>
+
+    <div class="fu d5 stack"><h2 class="sec-title">Besoin d’aide ?</h2>
+      <div class="card list">
+        <button class="li tap" data-act="syncPlus" ${U.syncing ? 'disabled' : ''}><span class="row">${img3d('counterclockwise-arrows-button', 24)}<span><b>${U.syncing ? 'Vérification…' : 'Restaurer mon abonnement'}</b><small>Si tu as payé et que Plus ne s’affiche pas</small></span></span>›</button>
+        ${[['J’ai perdu ma clé', 'Elle se trouve dans l’e-mail de confirmation envoyé par Chariow juste après ton paiement. Cherche « Mon Assiette Plus » dans ta boîte mail.'],
+           ['Vais-je être prélevé automatiquement ?', 'Non, jamais. Plus s’arrête tout seul à la date de fin. Tu prolonges seulement si tu le veux.'],
+           ['Que se passe-t-il à la fin ?', 'Tu repasses à la formule gratuite. Ton bilan, ton suivi et tes plats améliorés restent sur ton téléphone.'],
+           ['J’ai changé de téléphone', 'Une clé s’active sur un seul téléphone. Garde l’ancien si possible, ou achète une nouvelle clé pour le nouveau téléphone.']]
+          .map((q, i) => `<div class="faq ${U.faq === 10 + i ? 'open' : ''}"><button class="tap" data-act="faq" data-arg="${10 + i}" aria-expanded="${U.faq === 10 + i}">${q[0]}<span>${U.faq === 10 + i ? '−' : '+'}</span></button>${U.faq === 10 + i ? `<p>${q[1]}</p>` : ''}</div>`).join('')}
+      </div></div>
+    <p class="fine">Paiements traités par Chariow. Prix en F CFA. Aucun prélèvement automatique.</p>
   </section>`;
 }
 
@@ -520,7 +604,7 @@ export function offers(S, U, C) {
     ['Ma clé marche sur un autre téléphone ?', 'Une clé s’active sur un seul téléphone. Garde-la précieusement : elle sert aussi de preuve d’achat.'],
     ['Avec quoi je peux payer ?', (ops.length ? ops.map((m) => m.label).join(', ') + ' ou carte bancaire' : 'Mobile Money ou carte bancaire') + ', sur la page sécurisée de Chariow.']
   ];
-  const notice = C.paid ? `<div class="shop-note ok">${icon('check', 16, '#15803D', 2.6)}<span><b>Plus est actif</b> jusqu’au ${until}. Les jours achetés s’ajoutent.</span></div>`
+  const notice = C.paid ? `<div class="shop-note ok">${icon('check', 16, '#15803D', 2.6)}<span><b>Plus est actif</b> jusqu’au ${until}. Les jours achetés s’ajoutent.</span><button class="link sm" data-act="go" data-arg="abonnement">Voir</button></div>`
     : C.trialOn ? `<div class="shop-note">${img3d('alarm-clock', 20)}<span><b>Essai en cours :</b> encore ${C.hoursLeft} h. Paie maintenant pour garder Plus.</span><button class="link sm" data-act="cancelTrial">Arrêter</button></div>` : '';
   const buy = cta(C.paid ? `Prolonger · ${chosen.price}` : `Payer ${chosen.price}`, 'payChariow', { icon: 'check', sub: link ? 'Mobile Money ou carte · paiement sécurisé' : 'Bientôt disponible', disabled: !link, cls: 'shop-buy', id: 'pay-cta' });
 
