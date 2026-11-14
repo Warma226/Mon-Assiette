@@ -52,20 +52,35 @@ export const SHARED_DEFS = `<svg width="0" height="0" style="position:absolute" 
 <linearGradient id="gDrop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8CC8FF"/><stop offset="1" stop-color="#2563EB"/></linearGradient>
 </defs></svg>`;
 
-const BOWL_FILL = { green: 'gGreen', orange: 'gOrange', blue: 'gBlue', yellow: 'gYellow', red: 'gRed' };
-
-export function food(kind, size = 30) {
-  if (kind === 'mango') {
-    return `<svg width="${size}" height="${size}" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 9c9 0 14 8 13 15-1 8-8 12-15 11S6 29 7 21s4-12 13-12z" fill="url(#gMango)"/><path d="M20 9c1-3 5-5 9-4-1 3-5 5-9 4z" fill="url(#gLeaf)"/><path d="M12 18a8 8 0 0 1 4-4" stroke="#fff" stroke-opacity=".6" stroke-width="2" stroke-linecap="round" fill="none"/></svg>`;
-  }
-  return `<svg width="${size}" height="${size}" viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="20" cy="19" rx="15" ry="4" fill="#F7E2C4"/><circle cx="15" cy="17" r="4" fill="url(#gLeaf)"/><circle cx="22" cy="16" r="4.4" fill="#F05A3C"/><circle cx="27.5" cy="18" r="3.4" fill="#E9C27A"/><path d="M4 19h32a16 16 0 0 1-32 0z" fill="url(#${BOWL_FILL[kind] || 'gOrange'})"/><path d="M9 23a12 12 0 0 0 6 7" stroke="#fff" stroke-opacity=".55" stroke-width="2" stroke-linecap="round" fill="none"/></svg>`;
+// Icônes 3D (Fluent Emoji de Microsoft, licence MIT) : voir assets/icons/LICENSE-fluentui-emoji.txt
+export function img3d(name, size = 38, alt = '') {
+  return `<img class="i3d" src="/assets/icons/${name}.webp" width="${size}" height="${size}" alt="${alt}" loading="lazy" decoding="async" draggable="false">`;
 }
 
+// Choisit l'icône d'un plat d'après son nom
+export function foodIcon(name) {
+  const n = String(name).toLowerCase();
+  if (/bouillie/.test(n)) return 'bowl-with-spoon';
+  if (/banane/.test(n)) return 'banana';
+  if (/orange/.test(n)) return 'tangerine';
+  if (/mangue|goyave|papaye|fruit/.test(n)) return 'mango';
+  if (/arachides grill/.test(n)) return 'seedling';
+  if (/pain/.test(n)) return 'bread';
+  if (/attiéké|poisson braisé/.test(n)) return 'fish';
+  if (/riz gras|spaghetti/.test(n)) return 'shallow-pan-of-food';
+  if (/riz/.test(n)) return 'curry-rice';
+  if (/haricot|benga|niébé/.test(n)) return 'bento-box';
+  if (/salade|crudit/.test(n)) return 'green-salad';
+  return 'pot-of-food';
+}
+
+export function food(name, size = 30) { return img3d(foodIcon(name), size); }
+
 export const ICON3D = {
-  calendar: `<svg width="38" height="38" viewBox="0 0 40 40" aria-hidden="true"><rect x="6" y="8" width="28" height="27" rx="7" fill="url(#gCalBody)"/><path d="M6 15a7 7 0 0 1 7-7h14a7 7 0 0 1 7 7v2H6z" fill="url(#gCalTop)"/><rect x="12" y="4" width="3.2" height="8" rx="1.6" fill="#3A3F47"/><rect x="24.8" y="4" width="3.2" height="8" rx="1.6" fill="#3A3F47"/><rect x="11" y="21" width="5" height="4" rx="1.5" fill="#F05A3C"/><rect x="17.5" y="21" width="5" height="4" rx="1.5" fill="#C3CCD8"/><rect x="24" y="21" width="5" height="4" rx="1.5" fill="#C3CCD8"/><rect x="11" y="27" width="5" height="4" rx="1.5" fill="#C3CCD8"/><rect x="17.5" y="27" width="5" height="4" rx="1.5" fill="#C3CCD8"/></svg>`,
-  star: `<svg width="38" height="38" viewBox="0 0 40 40" aria-hidden="true"><path d="M18 4l3.6 9.4L31 17l-9.4 3.6L18 30l-3.6-9.4L5 17l9.4-3.6z" fill="url(#gStar)"/><path d="M31 25l1.6 4.4L37 31l-4.4 1.6L31 37l-1.6-4.4L25 31l4.4-1.6z" fill="#FF8A3D"/><path d="M14.5 12.5l1.6-3.2" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".75"/></svg>`,
-  basket: `<svg width="38" height="38" viewBox="0 0 40 40" aria-hidden="true"><path d="M14 16l5-10M26 16l-5-10" stroke="#8A5A22" stroke-width="2.6" stroke-linecap="round"/><circle cx="14.5" cy="15" r="4.2" fill="#F05A3C"/><circle cx="21.5" cy="13.5" r="4.4" fill="#7CCB6E"/><circle cx="27.5" cy="15.5" r="3.6" fill="#FFB020"/><path d="M5 17h30l-3.4 14.2a4 4 0 0 1-3.9 3.1H12.3a4 4 0 0 1-3.9-3.1z" fill="url(#gBasket)"/><path d="M9.5 23h21M11 28h18" stroke="#fff" stroke-opacity=".4" stroke-width="2" stroke-linecap="round"/></svg>`,
-  chat: `<svg width="38" height="38" viewBox="0 0 40 40" aria-hidden="true"><path d="M5 11a6 6 0 0 1 6-6h18a6 6 0 0 1 6 6v10a6 6 0 0 1-6 6h-9l-7 6v-6.2A6 6 0 0 1 5 21z" fill="url(#gChat)"/><circle cx="13.5" cy="16" r="2.5" fill="#fff"/><circle cx="20" cy="16" r="2.5" fill="#fff"/><circle cx="26.5" cy="16" r="2.5" fill="#fff"/></svg>`
+  calendar: img3d('spiral-calendar', 44),
+  star: img3d('sparkles', 44),
+  basket: img3d('basket', 44),
+  chat: img3d('speech-balloon', 44)
 };
 
 const PATHS = {
@@ -106,4 +121,4 @@ export function icon(name, size = 22, color = 'currentColor', width = 1.9) {
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${PATHS[name] || ''}"/></svg>`;
 }
 
-export const BELL_FILLED = `<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a6 6 0 0 0-6 6c0 6-2.5 8-2.5 8h17S18 14.5 18 8.5a6 6 0 0 0-6-6z" fill="#141614"/><path d="M9.8 19.5a2.3 2.3 0 0 0 4.4 0z" fill="#141614"/></svg>`;
+export const BELL_FILLED = img3d('bell', 30);

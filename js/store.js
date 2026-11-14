@@ -1,4 +1,5 @@
 // État local (fonctionne hors connexion) + file de synchronisation vers Supabase.
+import { DEFAULT_PROFILE } from './engine.js';
 
 const KEY = 'mon-assiette:v1';
 
@@ -15,7 +16,10 @@ export function fresh() {
     v: 1,
     deviceId: uuid(),
     onboarded: false,
-    profile: { name: '', goal: 'energie', household: '4-6', kids: false, budget: 1000, lang: 'Français', notif: { meals: true, water: true, tips: false } },
+    profile: JSON.parse(JSON.stringify(DEFAULT_PROFILE)),
+    sound: true,
+    swaps: {},
+    missions: {},
     trial: null,
     pay: { method: 'orange', phone: '' },
     orgCode: null,
@@ -36,7 +40,11 @@ export function load() {
     if (!raw) return fresh();
     const s = JSON.parse(raw);
     if (!s || s.v !== 1 || !s.deviceId) return fresh();
-    return Object.assign(fresh(), s, { profile: Object.assign(fresh().profile, s.profile || {}) });
+    const f = fresh();
+    const prof = Object.assign(f.profile, s.profile || {});
+    prof.habits = Object.assign({}, DEFAULT_PROFILE.habits, (s.profile || {}).habits || {});
+    ['conditions', 'allergies'].forEach((k) => { if (!Array.isArray(prof[k])) prof[k] = []; });
+    return Object.assign(f, s, { profile: prof });
   } catch (e) {
     return fresh();
   }

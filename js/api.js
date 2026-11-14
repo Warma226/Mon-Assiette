@@ -48,11 +48,11 @@ export function makeApi(deviceId) {
       return upsert('ma_profiles', [{
         device_id: deviceId,
         name: (p.name || '').slice(0, 60),
-        goal: p.goal,
-        household: p.household,
-        kids: !!p.kids,
-        budget: p.budget,
-        lang: p.lang,
+        goal: ['energie', 'equilibre', 'sante', 'poids'].includes(p.goal) ? p.goal : 'equilibre',
+        household: '1',
+        kids: false,
+        budget: [500, 1000, 2000].includes(p.budget) ? p.budget : 2000,
+        lang: 'Français',
         notif: p.notif
       }], 'device_id');
     },

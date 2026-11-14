@@ -1,69 +1,63 @@
-# Mon Assiette
+# Mon Assiette — ton assistant nutrition
 
-Application mobile (PWA) qui aide les familles d'Afrique de l'Ouest à mieux manger : **quoi manger, quand et comment**, avec les produits locaux et selon leur budget. Avec **Kalou**, la petite calebasse qui sert de coach.
+Application mobile (PWA) qui répond à une question simple et pourtant difficile en Afrique de l'Ouest : **« Qu'est-ce que je mange, et pourquoi ? »**
+Beaucoup de gens ont les moyens, mais ne savent pas quoi manger et manquent souvent d'appétit. Mon Assiette les accompagne comme une nutritionniste : un bilan, des priorités, puis **le repas idéal au bon moment, avec sa raison**. Avec **Kalou**, la petite calebasse qui sert de coach.
 
-## Fonctionnalités
+Application **individuelle** : un profil, un bilan, un plan.
 
-- **Bienvenue** en 3 écrans animés, puis **questionnaire** (prénom, objectif, foyer, budget, langue).
-- **Accueil** : score d'équilibre du jour (repas + eau), suivi de l'eau, actions rapides, astuces de Kalou (lecture audio), repas du jour à cocher.
-- **Plan repas** : 7 jours, filtres Matin / Midi / Soir, progression animée, historique.
-- **Améliorer un plat** : riz gras, tô gombo, sauce arachide, attiéké, benga. Score d'équilibre en direct. 3 par semaine en gratuit.
-- **Marché et budget** : menus à 500, 1 000 ou 2 000 F CFA par personne, produits de saison, liste de courses partageable sur WhatsApp.
-- **Chat avec Kalou** : réponses aux questions courantes (enfants, diabète, grossesse, eau, budget…). Questions envoyées à une nutritionniste pour les abonnés Plus.
-- **Profil** : modification des réponses, rappels repas et eau, installation sur le téléphone, effacement des données.
-- **Offres Plus** : essai gratuit de **72 h** (une fois par téléphone), formules Semaine / Mois / Famille, Orange Money, Moov Money ou carte, codes entreprise ou mutuelle.
-- **Fonctionne hors connexion** : tout est enregistré sur le téléphone puis synchronisé dès que le réseau revient.
+## Le parcours
+
+1. **Bilan (la consultation)** : 7 étapes — prénom ; sexe, âge, activité ; poids et taille (facultatif) ; objectif ; santé (diabète, tension, anémie, cholestérol, estomac sensible, grossesse, allaitement) ; **allergies** (arachide, lait, œuf, poisson, crustacés, gluten) et régime végétarien ; habitudes (petit-déjeuner, légumes, fruits, boissons sucrées, cubes, **appétit**, eau).
+2. **Rapport de bilan** : portrait (IMC indicatif, jamais pour les ados ni pendant la grossesse), score des habitudes, **3 priorités expliquées**, aliments à privilégier et à limiter, allergènes retirés, objectif d'eau personnalisé, conseils pour retrouver l'appétit, mises en garde médicales.
+3. **Le moment idéal** (accueil) : le prochain repas à manger maintenant, avec **« Pourquoi maintenant ? »** et **« Ce que ce repas t'apporte »**, la recette, « Autre idée », « Je le mange ».
+4. **Thème du jour** : lundi énergie, mardi fer, mercredi légumes, jeudi protéines, vendredi léger, samedi plaisir, dimanche douceur.
+5. **Journée idéale** : petit-déjeuner 7:30, collation 10:00, déjeuner 13:00, **dessert** 13:30, **boisson bien-être** 17:00, dîner 19:30.
+6. **Roue nutritionnelle** : énergie, protéines, fer, fibres, vitamines, calcium, légumes — se remplit à chaque repas noté.
+7. **Suivi** : défi de la semaine lié à la priorité n°1, série de jours (2 repas notés minimum), objectif d'eau.
+8. **Cuisiner** : « J'ai ces ingrédients » (Kalou propose quoi préparer) et « Améliorer un plat ».
+9. **Courses** : liste calculée à partir du plan (2 jours en gratuit, 7 jours avec Plus).
+10. **Kalou** : répond selon le bilan (pourquoi ce menu, allergies, appétit, grignotage, soir, diabète…).
+11. **Plus** : essai gratuit de 72 h, formules Semaine / Mois / 3 mois, Orange Money, Moov Money ou carte, codes entreprise.
+
+## Sur quelle base sont faits les menus ?
+
+- Recommandations générales de l'**OMS** et de la **FAO** : assiette équilibrée (½ légumes, ¼ céréales, ¼ protéines), moins de sel, de sucre et de gras, plus de légumes, de haricot et de céréales locales (mil, sorgho, fonio).
+- Un **catalogue de 54 plats et boissons** d'Afrique de l'Ouest (`js/content.js`), chacun décrit par ses ingrédients, ses **allergènes** et ses atouts (fer, protéines, fibres, index glycémique bas, sel, gras…).
+- Un **moteur** (`js/engine.js`) qui transforme le bilan en priorités, puis en poids nutritionnels, et choisit chaque jour les plats qui servent le mieux ces priorités, avec de la variété.
+- **Règles strictes** : un plat contenant un allergène déclaré n'est jamais proposé ; végétarien = ni viande, ni poisson, ni crustacés ; pas de tisanes pendant la grossesse ou l'allaitement par prudence.
+- **Test automatique** : 2 000 profils au hasard × 30 jours de menus = 366 557 repas contrôlés, **0 violation**.
+- ⚠️ Tout le contenu doit être **relu et validé par une nutritionniste diplômée** avant le lancement public.
 
 ## Technique
 
-- HTML, CSS et JavaScript modernes, **sans dépendance ni étape de compilation** : rapide sur les petits téléphones Android.
-- PWA installable (manifest + service worker), cache hors ligne.
-- **Supabase** pour la base de données. Pas de compte : chaque téléphone reçoit un identifiant anonyme envoyé dans l'en-tête `x-device-id`, et les règles RLS ne laissent chaque téléphone voir que ses propres données.
-- Hébergé sur **Vercel** (site statique).
+- HTML, CSS et JavaScript, **sans dépendance ni compilation** : rapide sur les petits téléphones Android.
+- PWA installable, hors ligne, effets sonores synthétisés (coupables dans le profil), lecture audio des conseils (synthèse vocale du téléphone, en français).
+- **Supabase** : pas de compte ; identifiant anonyme par téléphone (`x-device-id`) et règles RLS. **La santé, les allergies et les habitudes restent sur le téléphone** et ne sont jamais envoyées.
+- Hébergé sur **Vercel**. Icônes 3D : **Fluent Emoji** de Microsoft (licence MIT, `assets/icons/LICENSE-fluentui-emoji.txt`).
 
 ```
-index.html            page unique
-css/app.css           styles et animations
-js/app.js             état, navigation, actions, rappels
-js/views.js           écrans
-js/content.js         contenus (conseils, plats, menus, réponses de Kalou)
-js/art.js             Kalou et icônes (SVG)
-js/store.js           stockage local et file de synchronisation
-js/api.js             appels à Supabase (REST)
-js/config.js          URL et clé publique Supabase
-sw.js                 service worker
-supabase/migrations/  schéma de la base
+js/content.js   catalogue des plats, recettes, thèmes, bilan, défis
+js/engine.js    bilan, priorités, plan du jour, explications, « j'ai ces ingrédients »
+js/views.js     écrans
+js/app.js       état, navigation, actions, rappels, Kalou
+js/sfx.js       effets sonores
+js/store.js     stockage local et synchronisation
+js/api.js       Supabase (REST)
 ```
 
-## Base de données
+## Logos des opérateurs de paiement
 
-Tables (préfixe `ma_`) : `ma_profiles`, `ma_meal_logs`, `ma_water_logs`, `ma_improvements`, `ma_questions`, `ma_org_codes`.
-Fonctions : `ma_start_trial(plan)`, `ma_cancel_trial()`, `ma_redeem_code(code)`.
-Code de démonstration entreprise : `DEMO2026`.
-
-Pour créer un code entreprise (dans l'éditeur SQL de Supabase) :
-
-```sql
-insert into ma_org_codes (code, org_name, max_uses) values ('SONABEL2027', 'SONABEL', 500);
-```
-
-## Lancer en local
-
-N'importe quel serveur statique suffit :
+Déposer les logos officiels (fournis dans le kit marchand de l'opérateur ou de l'agrégateur de paiement) ici :
 
 ```
-npx serve .
+assets/pay/orange-money.png
+assets/pay/moov-money.png
 ```
 
-## État des vérifications (14/11/2026)
-
-- Site en ligne, fichiers de l'app installable servis correctement (page, manifest, service worker, icônes).
-- Connexion réelle site → Supabase validée : profil, essai 72 h, repas, code entreprise et numéro de paiement enregistrés, aucune erreur.
-- Règles de sécurité testées : chaque téléphone ne voit que ses données ; un 2e essai gratuit est refusé.
-- Droits des photos : réglés.
+Ils s'affichent automatiquement. En leur absence, l'app montre une pastille aux couleurs de l'opérateur.
 
 ## À faire avant le lancement public
 
-- Faire relire tous les conseils par une nutritionniste (fichier `js/content.js`).
+- Validation de tout le contenu par une nutritionniste.
 - Brancher le paiement Mobile Money (CinetPay, PayDunya ou FedaPay) à la fin de l'essai.
-- Enregistrer les audios en mooré, dioula et fulfuldé.
+- Logos officiels des opérateurs.

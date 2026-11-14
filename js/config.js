@@ -5,5 +5,5 @@ export const CONFIG = {
   supabaseKey: 'sb_publishable_xj2JvOrjr_u-oAXu8igK7w_0oC92tKJ',
   trialHours: 72,
   freeImprovesPerWeek: 3,
-  reminders: { matin: '07:30', midi: '13:00', soir: '19:30' }
+  reminders: { matin: '07:30', collation: '10:00', midi: '13:00', bienetre: '17:00', soir: '19:30' }
 };
