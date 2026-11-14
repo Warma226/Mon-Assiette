@@ -465,6 +465,14 @@ root.addEventListener('input', (e) => {
     const b = document.getElementById('trial-cta'); if (b) b.setAttribute('aria-disabled', ok ? 'false' : 'true');
   }
 });
+// La roue : on peut aussi la lancer d'un geste (glisser) ou en touchant le disque
+let flick = null;
+root.addEventListener('pointerdown', (e) => { if (e.target.closest('.wheel-svg')) flick = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+root.addEventListener('pointerup', (e) => {
+  if (!flick) return; const f = flick; flick = null;
+  if (!e.target.closest('.wheel-box')) return;
+  sfx.unlock(); spinWheel();
+});
 root.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.id === 'f-name') { e.preventDefault(); ACT.setupNext(); } });
 root.addEventListener('submit', (e) => { const f = e.target.dataset.form; if (!f) return; e.preventDefault(); if (f === 'chat') ask(U.chatDraft); if (f === 'code') redeem(); });
 window.addEventListener('online', () => sync());

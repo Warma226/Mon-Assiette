@@ -572,7 +572,7 @@ export function wheel(S, U, C) {
       </svg>
       <button class="spin-hub tap" id="spin-btn" data-act="spin" ${W.spinning || !left ? 'aria-disabled="true"' : ''} aria-label="Tourner la roue">${W.spinning ? '…' : W.spins ? 'Encore' : 'Tourner'}</button>
     </div>
-    <p class="wheel-note fu d3">${W.spinning ? 'Ça tourne…' : W.spins === 0 ? 'Plus une case est grande, plus le plat te fait du bien, et plus il a de chances de sortir.' : left ? `Encore ${left - 0} relance${left > 1 ? 's' : ''} possible${left > 1 ? 's' : ''}.` : 'Plus de relance : la roue a parlé !'}</p>
+    <p class="wheel-note fu d3">${W.spinning ? 'Ça tourne…' : W.spins === 0 ? 'Touche « Tourner » ou fais glisser la roue avec ton doigt. Plus une case est grande, plus le plat te fait du bien.' : left ? `Encore ${left - 0} relance${left > 1 ? 's' : ''} possible${left > 1 ? 's' : ''}.` : 'Plus de relance : la roue a parlé !'}</p>
     ${W.msg && !W.spinning ? `<div class="tip-row popnow"><div class="tip-kalou">${kalou('clin', 70)}</div><div class="tip-bubble"><p>${esc(W.msg)}</p></div></div>` : ''}
     ${res && !W.spinning ? `<div class="hero-meal wheel-res popnow">
       <div class="hm-top"><span class="hm-when">La roue a choisi</span><span class="hm-slot">${SLOT_INFO[slot].label}</span></div>
