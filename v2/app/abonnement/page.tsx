@@ -14,7 +14,18 @@ const OFFERS = [
   { id: 'mois', name: '1 mois', price: '2 500 F CFA', note: '30 jours de Plus', url: 'https://otbbljjy.mychariow.shop/prd_w3fidn6g' },
 ];
 
-const FEATURES = ['Planning avancé sur 7 jours', 'Liste de courses automatique', 'Roue de Kalou illimitée', 'Gestion avancée du budget', 'Recommandations approfondies'];
+const COMPARE: [string, string, string][] = [
+  ['Quoi manger maintenant', 'Suggestion du moment', 'Ta journée complète prête chaque matin'],
+  ['Planning', 'Ajouter des plats à la main', 'Semaine entière préparée en 1 clic'],
+  ['Courses', '—', 'Liste automatique, rangée par rayon, partage WhatsApp'],
+  ['Budget', 'Indiquer son budget', 'Suivi des dépenses et alerte avant de dépasser'],
+  ['Rappels', '—', 'Repas, eau, décongélation, marché (notifications)'],
+  ['Kalou en discussion', '—', '30 questions par jour'],
+  ['Menus', '1 menu découverte', 'Tous les menus : moderne, fête, Ramadan, famille…'],
+  ['Restaurants', 'Les plus proches (5 recherches/jour)', 'Recherche par plat, filtres, favoris (60/jour)'],
+  ['Famille', 'Mes allergies', 'Profils de toute la famille, allergies de chacun'],
+  ['Roue de Kalou', '3 tours par jour', 'Illimitée'],
+];
 
 export default async function Abonnement() {
   const { user, profile } = await getSession();
@@ -50,14 +61,21 @@ export default async function Abonnement() {
             <img src="/kalou-joie.svg" alt="" width={90} height={90} className="relative" />
           )}
         </section>
-        <h2 className="titre-sec mb-3 mt-6">Avec Plus</h2>
-        <div className="carte">
-          {FEATURES.map((t, i) => (
-            <div key={t} className={`flex items-center gap-3 px-4 py-3.5 ${i ? 'border-t border-[#f0ecfb]' : ''}`}>
-              <span className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-lilas-2">
-                <Icon name="check" size={16} color="#6C3CF0" width={2.4} />
-              </span>
-              <span className="text-sm">{t}</span>
+        {plus && (
+          <Link href="/assistant" className="btn-violet mt-4 w-full">Ouvrir mon assistant Kalou</Link>
+        )}
+        <h2 className="titre-sec mb-3 mt-6">Gratuit ou Plus ?</h2>
+        <div className="carte overflow-hidden">
+          <div className="grid grid-cols-[1fr_1fr_1.25fr] bg-lilas px-3 py-2.5 text-[11.5px] font-bold">
+            <span />
+            <span>Gratuit</span>
+            <span className="text-violet-d">Plus</span>
+          </div>
+          {COMPARE.map(([k, free, plusTxt]) => (
+            <div key={k} className="grid grid-cols-[1fr_1fr_1.25fr] gap-2 border-t border-[#f0ecfb] px-3 py-3 text-[12.5px]">
+              <b className="text-[12.5px]">{k}</b>
+              <span className="text-gris">{free}</span>
+              <span className="flex gap-1.5"><Icon name="check" size={14} color="#6C3CF0" width={2.6} className="mt-0.5 flex-none" />{plusTxt}</span>
             </div>
           ))}
         </div>

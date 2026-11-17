@@ -43,7 +43,14 @@ export function BottomNav() {
             Mon <span className="text-violet">Assiette</span>
           </b>
         </Link>
-        {[...ITEMS.slice(0, 4), { href: '/favoris', icon: 'heart' as IconName, label: 'Favoris' }, ITEMS[4]].map((it) => (
+        {[
+          ...ITEMS.slice(0, 4),
+          { href: '/assistant', icon: 'sun' as IconName, label: 'Mon assistant' },
+          { href: '/menus', icon: 'bowl' as IconName, label: 'Les menus' },
+          { href: '/restaurants', icon: 'market' as IconName, label: 'Restaurants' },
+          { href: '/favoris', icon: 'heart' as IconName, label: 'Favoris' },
+          ITEMS[4],
+        ].map((it) => (
           <Link key={it.href} href={it.href} aria-current={on(it.href) ? 'page' : undefined} className={`flex items-center gap-2.5 rounded-[14px] px-3 py-2.5 text-sm ${on(it.href) ? 'bg-violet font-semibold text-white' : 'text-encre-2'}`}>
             <Icon name={it.icon} size={18} />
             {it.label === 'Ingrédients' ? 'Mes ingrédients' : it.label === 'Planning' ? 'Mon planning' : it.label === 'Profil' ? 'Mon profil' : it.label}

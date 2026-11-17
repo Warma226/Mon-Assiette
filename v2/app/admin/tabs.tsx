@@ -7,6 +7,7 @@ export function AdminTabs({ admin }: { admin: boolean }) {
   const tabs = [
     ['/admin', 'Tableau de bord'],
     ['/admin/plats', 'Plats'],
+    ['/admin/menus', 'Menus'],
     ['/admin/retours', 'Retours'],
     ...(admin ? [['/admin/comptes', 'Comptes et équipe'], ['/admin/ventes', 'Ventes']] : []),
   ];

@@ -1,7 +1,7 @@
 // Mon Assiette v2 : service worker.
 // Pages : réseau d'abord (jamais de données périmées présentées comme à jour), page hors ligne sinon.
 // Fichiers statiques (photos, polices, scripts versionnés) : cache d'abord.
-const VERSION = 'ma2-v1';
+const VERSION = 'ma2-v2';
 const OFFLINE = '/hors-ligne';
 
 self.addEventListener('install', (e) => {
@@ -29,4 +29,22 @@ self.addEventListener('fetch', (e) => {
       })),
     );
   }
+});
+
+// Rappels de Kalou (notifications envoyées par le serveur)
+self.addEventListener('push', (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch { d = { body: e.data && e.data.text() }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'Mon Assiette', {
+    body: d.body || '', icon: '/icons/icon-192.png', badge: '/icons/favicon-48.png', tag: d.tag || 'ma2', data: { url: d.url || '/assistant' },
+  }));
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || '/assistant';
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+    for (const c of list) if ('focus' in c) { c.navigate(url); return c.focus(); }
+    return self.clients.openWindow(url);
+  }));
 });

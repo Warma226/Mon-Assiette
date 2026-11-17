@@ -144,6 +144,10 @@ export default async function Plat({ params }: { params: Promise<{ slug: string 
         <div className="mt-5 flex gap-2.5">
           <AddToPlan dishId={dish.id} defaultCategory={dish.category_id} loggedIn={!!user} />
         </div>
+        <Link href={`/restaurants?plat=${encodeURIComponent(dish.name)}`} className="carte mt-3 flex items-center gap-3 px-4 py-3 text-sm">
+          <span className="flex-1"><b>Envie de le manger dehors ?</b><small className="block text-xs text-gris">Restaurants près de toi</small></span>
+          <span className="text-violet-d">›</span>
+        </Link>
         <ReportForm dishId={dish.id} userId={user?.id ?? null} />
         {dish.image_credit && (
           <p className="mt-5 text-[11px] text-gris">

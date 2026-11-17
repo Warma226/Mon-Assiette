@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getCategories, getDishes, getSession } from '@/lib/data';
+import { getCategories, getDishes, getSession, isPlus } from '@/lib/data';
 import { currentCategory, DEFAULT_TZ, greeting, localNow, suggest } from '@/lib/time';
 import { DishCard, DishImage, Page } from '@/components/ui';
 import { Icon } from '@/components/Icon';
@@ -107,6 +107,25 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
           </section>
         </div>
       </div>
+
+      <section className="grid gap-3 px-5 pt-4 sm:grid-cols-3">
+        <Link href="/assistant" className="relative flex items-center gap-3 overflow-hidden rounded-[22px] bg-violet p-4 text-white sm:col-span-1">
+          <img src="/kalou-joie.svg" alt="" width={52} height={52} className="flex-none" />
+          <span className="min-w-0">
+            <b className="block text-[15px]">Kalou, mon assistant</b>
+            <small className="block text-[12px] opacity-90">{isPlus(profile) ? 'Ma journée, mes courses, mes rappels' : 'Repas, courses et rappels préparés pour toi'}</small>
+          </span>
+          {!isPlus(profile) && <span className="absolute right-3 top-3 rounded-full bg-[#FFD54A] px-2 py-0.5 text-[10px] font-bold text-encre">PLUS</span>}
+        </Link>
+        <Link href="/menus" className="carte flex items-center gap-3 p-4">
+          <span className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl bg-[#8E3CC9]"><Icon name="bowl" size={22} color="#fff" width={2.2} /></span>
+          <span><b className="block text-[15px]">Les menus</b><small className="text-[12px] text-gris">Modernes, fête, petit budget…</small></span>
+        </Link>
+        <Link href="/restaurants" className="carte flex items-center gap-3 p-4">
+          <span className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl bg-[#1F2A22]"><Icon name="market" size={22} color="#fff" width={2.2} /></span>
+          <span><b className="block text-[15px]">Restaurants</b><small className="text-[12px] text-gris">Où manger près de moi</small></span>
+        </Link>
+      </section>
 
       <section className="px-5">
         <div className="mb-3 mt-6 flex items-center justify-between">

@@ -75,3 +75,13 @@ export async function grantPlus(f: FormData) {
   revalidatePath('/admin', 'layout');
   back('/admin/comptes', 'ok', `${days} jours de Plus offerts.`);
 }
+
+export async function setMenu(f: FormData) {
+  const { supabase } = await requireStaff();
+  const status = str(f, 'status');
+  if (!STATUS[status]) back('/admin/menus', 'err', 'Statut inconnu.');
+  const { error } = await supabase.from('ma2_menus').update({ status, is_plus: str(f, 'is_plus') === '1' }).eq('id', str(f, 'id'));
+  if (error) back('/admin/menus', 'err', 'Modification refusée.');
+  revalidatePath('/', 'layout');
+  back('/admin/menus', 'ok', `Menu enregistré : ${STATUS[status]}.`);
+}
