@@ -16,7 +16,11 @@ export default async function Profil() {
         <TopBar title="Mon profil" />
         <div className="px-5">
           <Empty title="Personnalise tes suggestions" text="Crée ton compte pour indiquer tes préférences, tes allergies et ton budget." action={<Link href="/connexion?suite=profil" className="btn-violet h-11 text-sm">Se connecter</Link>} />
-          <Link href="/credits" className="mt-4 block text-center text-xs text-gris underline">Crédits photos</Link>
+          <div className="mt-4 flex justify-center gap-4 text-xs text-gris underline">
+            <Link href="/confidentialite">Confidentialité</Link>
+            <Link href="/conditions">Conditions</Link>
+            <Link href="/credits">Crédits photos</Link>
+          </div>
         </div>
       </Page>
     );
@@ -53,7 +57,11 @@ export default async function Profil() {
           selectedPrefs={prefs}
           selectedAllergies={allergies}
         />
-        <Link href="/credits" className="mt-5 block text-center text-xs text-gris underline">Crédits photos</Link>
+        <div className="mt-5 flex justify-center gap-4 text-xs text-gris underline">
+          <Link href="/confidentialite">Confidentialité</Link>
+          <Link href="/conditions">Conditions</Link>
+          <Link href="/credits">Crédits photos</Link>
+        </div>
       </div>
     </Page>
   );
