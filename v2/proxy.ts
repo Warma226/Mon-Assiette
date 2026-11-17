@@ -3,6 +3,16 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 // Rafraîchit la session Supabase à chaque requête de page.
 export async function proxy(request: NextRequest) {
+  // Si Supabase renvoie le code de connexion sur une autre page que /auth/callback
+  // (adresse de retour non autorisée → retour à l'adresse du site), on le récupère quand même.
+  const url = request.nextUrl;
+  const code = url.searchParams.get('code');
+  if (code && url.pathname !== '/auth/callback') {
+    const to = new URL('/auth/callback', url.origin);
+    to.searchParams.set('code', code);
+    to.searchParams.set('next', url.pathname);
+    return NextResponse.redirect(to);
+  }
   let response = NextResponse.next({ request });
   const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {
     cookies: {
