@@ -3,9 +3,16 @@ import type { Metadata } from 'next';
 import { getSession, isPlus } from '@/lib/data';
 import { Empty, Page, TopBar } from '@/components/ui';
 import { Icon } from '@/components/Icon';
+import { LicenseForm } from '@/components/LicenseForm';
 
 export const metadata: Metadata = { title: 'Mon abonnement' };
 export const dynamic = 'force-dynamic';
+
+// Pages de paiement Chariow (mêmes produits que la première version)
+const OFFERS = [
+  { id: 'semaine', name: '1 semaine', price: '650 F CFA', note: '7 jours de Plus', url: 'https://otbbljjy.mychariow.shop/prd_oirgyxlr/checkout' },
+  { id: 'mois', name: '1 mois', price: '2 500 F CFA', note: '30 jours de Plus', url: 'https://otbbljjy.mychariow.shop/prd_w3fidn6g' },
+];
 
 const FEATURES = ['Planning avancé sur 7 jours', 'Liste de courses automatique', 'Roue de Kalou illimitée', 'Gestion avancée du budget', 'Recommandations approfondies'];
 
@@ -54,9 +61,25 @@ export default async function Abonnement() {
             </div>
           ))}
         </div>
-        <div className="carte mt-4 p-4 text-[13px] text-gris">
-          Le paiement de Plus (Mobile Money ou carte via Chariow) arrive dans cette nouvelle version très bientôt. Les abonnements déjà payés seront repris.
+        <h2 className="titre-sec mb-1 mt-6">{plus ? 'Prolonger' : 'Passer à Plus'}</h2>
+        <p className="mb-3 text-[12.5px] text-gris">Paie sur la page sécurisée de Chariow (Mobile Money ou carte), puis colle ta clé ci-dessous. Les jours s’ajoutent à ceux qui restent.</p>
+        <div className="grid grid-cols-2 gap-3">
+          {OFFERS.map((o) => (
+            <a key={o.id} href={o.url} target="_blank" rel="noopener noreferrer" className="carte flex flex-col p-4">
+              <small className="text-xs font-semibold text-violet-d">{o.name}</small>
+              <b className="mt-1 text-lg">{o.price}</b>
+              <small className="text-xs text-gris">{o.note}</small>
+              <span className="btn-violet mt-3 h-10 text-[13px]">Payer</span>
+            </a>
+          ))}
         </div>
+        <LicenseForm />
+        <ol className="carte mt-3 space-y-2.5 p-4 text-[13px]">
+          <li><b>1.</b> Choisis ta formule et paie sur Chariow.</li>
+          <li><b>2.</b> Copie la clé affichée après le paiement (elle arrive aussi par e-mail).</li>
+          <li><b>3.</b> Colle-la ici : Plus s’active sur ton compte, sur tous tes appareils.</li>
+        </ol>
+        <p className="mt-3 text-center text-[11.5px] text-gris">Paiements traités par Chariow. Prix en F CFA. Aucun prélèvement automatique.</p>
       </div>
     </Page>
   );

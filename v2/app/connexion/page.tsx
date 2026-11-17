@@ -7,7 +7,7 @@ import { LoginForm } from '@/components/LoginForm';
 export const metadata: Metadata = { title: 'Connexion' };
 export const dynamic = 'force-dynamic';
 
-const NEXT: Record<string, string> = { favoris: '/favoris', planning: '/planning', profil: '/profil' };
+const NEXT: Record<string, string> = { favoris: '/favoris', planning: '/planning', profil: '/profil', admin: '/admin', abonnement: '/abonnement' };
 
 export default async function Connexion({ searchParams }: { searchParams: Promise<{ suite?: string; erreur?: string }> }) {
   const { suite, erreur } = await searchParams;

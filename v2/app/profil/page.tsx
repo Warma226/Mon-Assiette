@@ -25,6 +25,7 @@ export default async function Profil() {
       </Page>
     );
   const { data: countries } = await supabase.from('ma2_countries').select('id, name, is_active').order('name');
+  const { data: staff } = await supabase.from('ma2_admin_roles').select('role').eq('user_id', user.id).maybeSingle();
   const plus = isPlus(profile);
   const initial = (profile.display_name?.[0] ?? user.email?.[0] ?? 'M').toUpperCase();
   return (
@@ -50,6 +51,18 @@ export default async function Profil() {
           </span>
           <Icon name="next" size={18} />
         </Link>
+        {staff && (
+          <Link href="/admin" className="carte mt-3 flex items-center gap-3 px-4 py-3.5">
+            <span className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-lilas-2">
+              <Icon name="sliders" size={20} color="#6C3CF0" width={2.2} />
+            </span>
+            <span className="flex-1">
+              <b className="block text-sm">Administration</b>
+              <small className="text-xs text-gris">{staff.role === 'admin' ? 'Plats, retours, comptes et ventes' : 'Plats et retours'}</small>
+            </span>
+            <Icon name="next" size={18} />
+          </Link>
+        )}
         <ProfileForm
           profile={profile}
           countries={(countries ?? []) as { id: string; name: string; is_active: boolean }[]}

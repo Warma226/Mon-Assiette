@@ -6,6 +6,7 @@ import { DishImage, Page } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { FavButton } from '@/components/FavButton';
 import { AddToPlan } from '@/components/AddToPlan';
+import { ReportForm } from '@/components/ReportForm';
 
 export const dynamic = 'force-dynamic';
 
@@ -143,6 +144,7 @@ export default async function Plat({ params }: { params: Promise<{ slug: string 
         <div className="mt-5 flex gap-2.5">
           <AddToPlan dishId={dish.id} defaultCategory={dish.category_id} loggedIn={!!user} />
         </div>
+        <ReportForm dishId={dish.id} userId={user?.id ?? null} />
         {dish.image_credit && (
           <p className="mt-5 text-[11px] text-gris">
             Photo : {dish.image_credit} · {dish.image_license} ·{' '}
