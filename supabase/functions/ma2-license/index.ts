@@ -2,7 +2,9 @@
 // La clé API Chariow reste sur le serveur (secret CHARIOW_API_KEY). Une clé ne sert qu'une seule fois.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const KEY = Deno.env.get('CHARIOW_API_KEY') ?? '';
+// Une clé API valide ne contient ni espace ni retour à la ligne ; sinon on la considère absente.
+const RAW = (Deno.env.get('CHARIOW_API_KEY') ?? '').trim();
+const KEY = /^[\x21-\x7E]{10,}$/.test(RAW) ? RAW : '';
 const API = 'https://api.chariow.com/v1';
 const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
 const PLANS: Record<string, { price: number; days: number }> = {
@@ -71,6 +73,7 @@ Deno.serve(async (req) => {
   if (r.status === 404) { await fail('unknown_key'); return json(404, { error: 'unknown_key' }); }
   const g = await r.json().catch(() => null);
   const lic = g?.data;
+  if (r.status === 401 || r.status === 403) return json(503, { error: 'not_configured' });
   if (!r.ok || !lic) return json(502, { error: 'chariow', status: r.status });
   if (lic.status === 'revoked' || lic.revoked_at) return json(410, { error: 'revoked' });
   if (lic.is_expired || lic.status === 'expired') return json(410, { error: 'expired' });
