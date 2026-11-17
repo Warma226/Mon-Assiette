@@ -22,12 +22,15 @@ const CORS = {
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 
 // Reconnaît la formule à partir du nom du produit Chariow
-function planOf(name: string) {
+// Produits de la boutique, reconnus d'abord par leur identifiant Chariow (le nom peut changer)
+const PRODUCT_PLAN: Record<string, string> = { prd_oirgyxlr: 'semaine', prd_w3fidn6g: 'mois' };
+function planOf(name: string, id?: string) {
+  if (id && PRODUCT_PLAN[id]) return PRODUCT_PLAN[id];
   const n = name.toLowerCase();
-  if (/semaine/.test(n)) return 'semaine';
-  if (/3\s*mois|trimestre/.test(n)) return 'trimestre';
+  if (/semaine|week|hebdo/.test(n)) return 'semaine';
+  if (/3\s*(mois|months?)|trimestre|quarter/.test(n)) return 'trimestre';
   if (/\b1\s*an\b|année|annee|annuel/.test(n)) return 'annee';
-  if (/mois/.test(n)) return 'mois';
+  if (/mois|month/.test(n)) return 'mois';
   return null;
 }
 
@@ -39,6 +42,14 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json(405, { error: 'method' });
   let body: { action?: string; key?: string };
   try { body = await req.json(); } catch { body = {}; }
+  if (body.action === 'products') {
+    // Noms des produits de la boutique (pour reconnaître les formules) ; aucune donnée client
+    if (!KEY) return json(200, { configured: false });
+    const t = await chariow('/products?per_page=50').catch(() => null);
+    const g = t ? await t.json().catch(() => null) : null;
+    const list = Array.isArray(g?.data) ? g.data : Array.isArray(g?.data?.data) ? g.data.data : [];
+    return json(200, { status: t?.status ?? null, products: list.map((p: { id?: string; name?: string }) => ({ id: p.id, name: p.name })) });
+  }
   if (body.action === 'ping') {
     // Vérifie que la clé API est acceptée par Chariow (une clé de licence inexistante doit répondre 404, pas 401)
     if (!KEY) return json(200, { configured: false, accepted: false });
@@ -82,8 +93,8 @@ Deno.serve(async (req) => {
   if (!r.ok || !lic) return json(502, { error: 'chariow', status: r.status });
   if (lic.status === 'revoked' || lic.revoked_at) return json(410, { error: 'revoked' });
   if (lic.is_expired || lic.status === 'expired') return json(410, { error: 'expired' });
-  const plan = planOf(String(lic.product?.name ?? ''));
-  if (!plan) return json(422, { error: 'unknown_product' });
+  const plan = planOf(String(lic.product?.name ?? ''), lic.product?.id ?? lic.product_id);
+  if (!plan) { await fail('unknown_product:' + String(lic.product?.name ?? '?').slice(0, 120)); return json(422, { error: 'unknown_product' }); }
 
   // Activation chez Chariow (liée au compte) si la licence l'exige
   if (lic.status === 'pending_activation' || (!lic.is_active && lic.can_activate)) {
