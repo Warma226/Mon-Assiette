@@ -1,0 +1,83 @@
+@import 'tailwindcss';
+
+/* Système de design Mon Assiette (référence graphique : violet, tuiles colorées, bannière jaune) */
+@theme {
+  --font-sans: 'Poppins', system-ui, sans-serif;
+  --color-violet: #6c3cf0;
+  --color-violet-d: #5b2be0;
+  --color-violet-l: #8e6cf5;
+  --color-lilas: #f4f1ff;
+  --color-lilas-2: #ece5ff;
+  --color-ligne: #e6e0fa;
+  --color-encre: #17132b;
+  --color-encre-2: #3b3456;
+  --color-gris: #6b6585;
+  --color-emeraude: #047857;
+  --color-emeraude-l: #e7f6ec;
+  --color-corail: #d9381e;
+  --color-corail-l: #ffe9e4;
+  --color-soleil: #ffb020;
+  --color-soleil-l: #fff6d6;
+  --radius-carte: 22px;
+  --shadow-doux: 0 6px 20px rgba(76, 46, 170, 0.07);
+}
+
+:root {
+  color-scheme: light;
+}
+html,
+body {
+  background: var(--color-lilas);
+  color: var(--color-encre);
+}
+body {
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+:focus-visible {
+  outline: 3px solid var(--color-violet-l);
+  outline-offset: 2px;
+}
+
+@layer components {
+  .carte {
+    @apply rounded-[22px] bg-white shadow-[0_6px_20px_rgba(76,46,170,0.07)];
+  }
+  .rond {
+    @apply flex h-11 w-11 flex-none items-center justify-center rounded-full bg-white text-encre shadow-[0_4px_14px_rgba(76,46,170,0.08)];
+  }
+  .pastille {
+    @apply inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full bg-lilas px-3 text-xs font-medium text-encre-2;
+  }
+  .pastille-on {
+    @apply bg-violet text-white;
+  }
+  .btn {
+    @apply inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 text-[15px] font-semibold transition active:scale-[0.98] disabled:opacity-50;
+  }
+  .btn-violet {
+    @apply inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 text-[15px] font-semibold transition active:scale-[0.98] disabled:opacity-50 bg-violet text-white shadow-[0_8px_18px_rgba(108,60,240,0.28)];
+  }
+  .btn-blanc {
+    @apply inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 text-[15px] font-semibold transition active:scale-[0.98] disabled:opacity-50 border-[1.5px] border-[#d8ccff] bg-white text-violet-d;
+  }
+  .btn-soleil {
+    @apply inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 text-[15px] font-semibold transition active:scale-[0.98] disabled:opacity-50 bg-gradient-to-br from-[#ffd54a] to-[#ffa51f] text-encre shadow-[0_10px_22px_rgba(255,165,31,0.35)];
+  }
+  .champ {
+    @apply flex h-[52px] min-w-0 items-center gap-2.5 rounded-2xl border-[1.5px] border-ligne bg-white px-4;
+  }
+  .champ input,
+  .champ select {
+    @apply min-w-0 flex-1 bg-transparent text-[15px] outline-none;
+  }
+  .titre-sec {
+    @apply text-lg font-bold;
+  }
+  .tuile {
+    @apply flex h-[118px] flex-col items-center justify-center gap-2.5 rounded-[22px] p-2 text-center text-[13px] font-semibold text-white;
+  }
+  .tuile-ic {
+    @apply flex h-12 w-12 items-center justify-center rounded-full bg-white/20;
+  }
+}
