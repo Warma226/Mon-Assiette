@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 120 120" role="img" aria-label="Kalou, la mascotte">
+<defs>
+<radialGradient id="body" cx=".36" cy=".3" r=".78"><stop offset="0" stop-color="#FFD08A"/><stop offset=".35" stop-color="#FFA64A"/><stop offset=".75" stop-color="#EE7A24"/><stop offset="1" stop-color="#C2541A"/></radialGradient>
+<radialGradient id="rim" cx=".5" cy=".5" r=".5"><stop offset=".78" stop-color="#C2541A" stop-opacity="0"/><stop offset="1" stop-color="#8E3410" stop-opacity=".45"/></radialGradient>
+<radialGradient id="gloss" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<radialGradient id="bounce" cx=".5" cy="1" r=".6"><stop offset="0" stop-color="#FFE0A8" stop-opacity=".55"/><stop offset="1" stop-color="#FFE0A8" stop-opacity="0"/></radialGradient>
+<linearGradient id="arm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFB35C"/><stop offset="1" stop-color="#D96418"/></linearGradient>
+<radialGradient id="hand" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#FFD39A"/><stop offset=".6" stop-color="#F59A3E"/><stop offset="1" stop-color="#C95A16"/></radialGradient>
+<linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#C6F3A8"/><stop offset=".5" stop-color="#5DBE58"/><stop offset="1" stop-color="#1F7A3A"/></linearGradient>
+<linearGradient id="stem" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8B6230"/><stop offset="1" stop-color="#4E3214"/></linearGradient>
+<radialGradient id="eye" cx=".4" cy=".35" r=".7"><stop offset=".6" stop-color="#fff"/><stop offset="1" stop-color="#E9DCD2"/></radialGradient>
+<radialGradient id="pupil" cx=".35" cy=".3" r=".7"><stop offset="0" stop-color="#4A3428"/><stop offset="1" stop-color="#120A06"/></radialGradient>
+<radialGradient id="cheek" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FF5E57" stop-opacity=".7"/><stop offset="1" stop-color="#FF5E57" stop-opacity="0"/></radialGradient>
+<radialGradient id="shadow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#3B1D5C" stop-opacity=".35"/><stop offset="1" stop-color="#3B1D5C" stop-opacity="0"/></radialGradient>
+</defs>
+<ellipse cx="60" cy="113" rx="36" ry="6" fill="url(#shadow)"/>
+<path d="M26 78 Q12 84 15 96" stroke="url(#arm)" stroke-width="8" stroke-linecap="round" fill="none"/>
+<path d="M94 72 Q110 66 108 52" stroke="url(#arm)" stroke-width="8" stroke-linecap="round" fill="none"/>
+<circle cx="15" cy="97" r="6.5" fill="url(#hand)"/><circle cx="108" cy="50" r="6.5" fill="url(#hand)"/>
+<path d="M19 66C19 42 37 31 60 31S101 42 101 66C101 94 83 110 60 110S19 94 19 66Z" fill="url(#body)"/>
+<path d="M19 66C19 42 37 31 60 31S101 42 101 66C101 94 83 110 60 110S19 94 19 66Z" fill="url(#rim)"/>
+<ellipse cx="60" cy="100" rx="30" ry="10" fill="url(#bounce)"/>
+<path d="M24 53 Q60 65 96 53" stroke="#B4500F" stroke-width="3" stroke-linecap="round" fill="none" opacity=".55"/>
+<path d="M24 55.5 Q60 67.5 96 55.5" stroke="#FFD49A" stroke-width="1.4" stroke-linecap="round" fill="none" opacity=".6"/>
+<path d="M34 96l6-4.5 6 4.5 6-4.5 6 4.5 6-4.5 6 4.5 6-4.5 6 4.5 6-4.5" stroke="#FFE7C2" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".8"/>
+<ellipse cx="40" cy="43" rx="12" ry="6.5" transform="rotate(-28 40 43)" fill="url(#gloss)" opacity=".85"/>
+<circle cx="31" cy="54" r="2.2" fill="#fff" opacity=".7"/>
+<path d="M60 33C59.5 25 62 18.5 66.5 13.5" stroke="url(#stem)" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+<path d="M64 17C71 3 92 4 98 11 90 24 72 27 64 17Z" fill="url(#leaf)"/>
+<path d="M67.5 16.5Q80 12 93 10.5" stroke="#EFFFE6" stroke-width="1.6" stroke-linecap="round" fill="none" opacity=".85"/>
+<ellipse cx="78" cy="10.5" rx="6" ry="2" transform="rotate(-12 78 10.5)" fill="#fff" opacity=".45"/>
+<g><ellipse cx="46" cy="66" rx="10.5" ry="12" fill="url(#eye)"/><circle cx="48" cy="68.5" r="6.2" fill="url(#pupil)"/><circle cx="50.6" cy="65" r="2.4" fill="#fff"/><circle cx="46" cy="71.5" r="1" fill="#fff" opacity=".8"/></g>
+<path d="M65 67 Q74 61 83 67" stroke="#3A1C08" stroke-width="3.6" stroke-linecap="round" fill="none"/>
+<ellipse cx="33" cy="82" rx="7.5" ry="4.5" fill="url(#cheek)"/><ellipse cx="87" cy="82" rx="7.5" ry="4.5" fill="url(#cheek)"/>
+<path d="M50 82 Q60 92 70 82" stroke="#5A1E06" stroke-width="4" stroke-linecap="round" fill="none"/>
+</svg>
