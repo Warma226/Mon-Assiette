@@ -39,7 +39,12 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json(405, { error: 'method' });
   let body: { action?: string; key?: string };
   try { body = await req.json(); } catch { body = {}; }
-  if (body.action === 'ping') return json(200, { configured: !!KEY });
+  if (body.action === 'ping') {
+    // Vérifie que la clé API est acceptée par Chariow (une clé de licence inexistante doit répondre 404, pas 401)
+    if (!KEY) return json(200, { configured: false, accepted: false });
+    const t = await chariow('/licenses/ping-test-cle-inexistante').catch(() => null);
+    return json(200, { configured: true, accepted: !!t && t.status !== 401 && t.status !== 403, status: t?.status ?? null });
+  }
 
   // Compte connecté
   const jwt = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
