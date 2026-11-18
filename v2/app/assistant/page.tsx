@@ -9,6 +9,7 @@ import { Icon, type IconName } from '@/components/Icon';
 import { Notice } from '@/components/Notice';
 import { PLUS_PERKS, PlusGate } from '@/components/PlusGate';
 import { preparePlan, resetDay } from './actions';
+import { DAY_GOALS, dayBalance, loadNutriPool } from '@/lib/nutrition';
 
 export const metadata: Metadata = { title: 'Kalou, mon assistant' };
 export const dynamic = 'force-dynamic';
@@ -54,14 +55,16 @@ export default async function Assistant({ searchParams }: { searchParams: Promis
   const tz = profile?.timezone || DEFAULT_TZ;
   const now = localNow(tz);
   const today = now.isoDay;
-  const [categories, { data: plan }] = await Promise.all([
+  const [categories, npool, { data: plan }] = await Promise.all([
     getCategories(),
-    supabase.from('ma2_meal_plans').select('items:ma2_meal_plan_items(id, day, category_id, dish:ma2_dishes(slug, name, image_url, category_id, prep_minutes))').eq('user_id', user.id).eq('week_start', weekStart(today)).maybeSingle(),
+    loadNutriPool(supabase),
+    supabase.from('ma2_meal_plans').select('items:ma2_meal_plan_items(id, day, category_id, dish_id, dish:ma2_dishes(slug, name, image_url, category_id, prep_minutes))').eq('user_id', user.id).eq('week_start', weekStart(today)).maybeSingle(),
   ]);
-  type It = { id: string; day: string; category_id: string; dish: { slug: string; name: string; image_url: string | null; category_id: string; prep_minutes: number | null } | null };
+  type It = { id: string; day: string; category_id: string; dish_id: string; dish: { slug: string; name: string; image_url: string | null; category_id: string; prep_minutes: number | null } | null };
   const all = (plan?.items as unknown as It[]) ?? [];
   const items = all.filter((i) => i.day === today);
   const weekCount = all.length;
+  const bal = dayBalance(npool.filter((d) => items.some((i) => i.dish_id === d.id)));
   const name = profile?.display_name?.split(' ')[0];
 
   return (
@@ -118,7 +121,26 @@ export default async function Assistant({ searchParams }: { searchParams: Promis
                 );
               })}
             </div>
-            <p className="mt-2 text-[11.5px] text-gris">Kalou tient compte de tes allergies, de celles de ta famille, de tes préférences et de ce que tu as à la maison.</p>
+            {items.length > 0 && (
+              <div className="carte mt-3 p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <b className="text-sm">Équilibre de la journée</b>
+                  <Link href="/equilibre" className="text-[12px] font-semibold text-violet-d">Les repères ›</Link>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {DAY_GOALS.map((g) => {
+                    const ok = bal[g.id as 'cereales' | 'proteines' | 'legumes' | 'fruits'];
+                    return (
+                      <span key={g.id} className={`flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[12px] font-semibold ${ok ? 'bg-emeraude-l text-emeraude' : 'bg-soleil-l text-[#8A5A00]'}`}>
+                        <Icon name={ok ? 'check' : 'alert'} size={13} width={2.6} /> {g.label}
+                      </span>
+                    );
+                  })}
+                </div>
+                {(bal.sweet > 1 || bal.fried > 1) && <p className="mt-2 text-[12px] text-corail">Attention : {bal.sweet > 1 ? 'plusieurs plats sucrés' : 'plusieurs plats frits'} aujourd’hui.</p>}
+              </div>
+            )}
+            <p className="mt-2 text-[11.5px] text-gris">Kalou suit les repères de l’OMS et des guides alimentaires d’Afrique de l’Ouest, et tient compte des allergies de toute la famille, de tes préférences et de ce que tu as à la maison.</p>
           </section>
           <section>
             <h2 className="titre-sec mb-3">Mes outils</h2>

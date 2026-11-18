@@ -3,7 +3,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { DEFAULT_TZ } from '@/lib/time';
 import { todayIso, weekStart } from '@/lib/week';
-import { compose, ensurePlan, loadPool, plusSession, weekDays } from '@/lib/plus';
+import { ensurePlan, loadPool, MEALS, plusSession, weekDays } from '@/lib/plus';
+import { composeDay } from '@/lib/nutrition';
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? '').trim();
 const go = (path: string, kind: 'ok' | 'err', msg: string): never => redirect(`${path}${path.includes('?') ? '&' : '?'}${kind}=${encodeURIComponent(msg)}`);
@@ -27,13 +28,24 @@ export async function preparePlan(f: FormData) {
   if (!target.length) go(back, 'err', 'Cette semaine est déjà passée.');
   const planId = await ensurePlan(supabase, user.id, ws);
   const { data: existing } = await supabase.from('ma2_meal_plan_items').select('day, category_id, dish_id').eq('plan_id', planId);
-  const filled = new Set((existing ?? []).map((i) => `${i.day}|${i.category_id}`));
-  const taken = new Set((existing ?? []).map((i) => i.dish_id as string).filter(Boolean));
   const { pool, have, preferLocal } = await loadPool(supabase, user.id, allergies, prefs);
   if (!pool.length) go(back, 'err', 'Aucun plat ne correspond à tes allergies et préférences pour l’instant.');
-  const rows = compose(pool, have, preferLocal, target, taken, filled, user.id + day + Date.now());
+  const byId = new Map(pool.map((d) => [d.id, d]));
+  const ex = existing ?? [];
+  const weekUses = new Map<string, number>();
+  for (const i of ex) if (i.dish_id) weekUses.set(i.dish_id, (weekUses.get(i.dish_id) ?? 0) + 1);
+  const legumeDay = (d: string) => ex.some((i) => i.day === d && byId.get(i.dish_id)?.groups.includes('legumineuses'));
+  let legumeDays = days.filter(legumeDay).length;
+  const rows: { plan_id: string; day: string; category_id: string; dish_id: string }[] = [];
+  for (const d of target) {
+    const today = ex.filter((i) => i.day === d);
+    const already = today.map((i) => byId.get(i.dish_id)).filter(Boolean) as NonNullable<ReturnType<typeof byId.get>>[];
+    const picks = composeDay(pool, [...MEALS], already, new Set(today.map((i) => i.category_id)), weekUses, legumeDays, { have, preferLocal, seed: user.id + d });
+    if (!legumeDay(d) && picks.some((p) => p.dish.groups.includes('legumineuses'))) legumeDays++;
+    rows.push(...picks.map((p) => ({ plan_id: planId, day: d, category_id: p.category_id, dish_id: p.dish.id })));
+  }
   if (!rows.length) go(back, 'ok', scope === 'semaine' ? 'Ta semaine est déjà complète.' : 'Ta journée est déjà complète.');
-  const { error } = await supabase.from('ma2_meal_plan_items').insert(rows.map((r) => ({ ...r, plan_id: planId })));
+  const { error } = await supabase.from('ma2_meal_plan_items').insert(rows);
   if (error) go(back, 'err', 'Enregistrement impossible. Réessaie.');
   revalidatePath('/', 'layout');
   go(back, 'ok', scope === 'semaine' ? `Semaine préparée : ${rows.length} repas ajoutés.` : `Journée préparée : ${rows.length} repas ajoutés.`);

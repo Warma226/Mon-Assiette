@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { getCategories, getDishes, getSession, isPlus } from '@/lib/data';
-import { currentCategory, DEFAULT_TZ, greeting, localNow, suggest } from '@/lib/time';
+import { currentCategory, DEFAULT_TZ, greeting, localNow } from '@/lib/time';
+import { filterPool, loadNutriPool, rankFor, why, type NDish } from '@/lib/nutrition';
+import { weekStart } from '@/lib/week';
 import { DishCard, DishImage, Page } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { FavButton } from '@/components/FavButton';
@@ -10,11 +12,29 @@ export const dynamic = 'force-dynamic';
 export default async function Home({ searchParams }: { searchParams: Promise<{ autre?: string }> }) {
   const { autre } = await searchParams;
   const skip = Math.max(0, Number(autre) || 0);
-  const [{ user, profile, allergies, supabase }, categories, dishes] = await Promise.all([getSession(), getCategories(), getDishes()]);
+  const [{ user, profile, allergies, prefs, supabase }, categories, dishes] = await Promise.all([getSession(), getCategories(), getDishes()]);
   const tz = profile?.timezone || DEFAULT_TZ;
   const now = localNow(tz);
   const cat = categories.length ? currentCategory(categories, now.hour) : null;
-  const pick = cat ? suggest(dishes, cat.id, allergies, now.isoDay + (user?.id ?? ''), skip) : null;
+  // Suggestion selon les repères nutritionnels : ce qui complète le mieux la journée, pas le hasard
+  const npool = filterPool(await loadNutriPool(supabase), allergies, prefs);
+  let today: NDish[] = [];
+  let have = new Set<string>();
+  if (user) {
+    const [{ data: plan }, { data: avail }] = await Promise.all([
+      supabase.from('ma2_meal_plans').select('items:ma2_meal_plan_items(day, dish_id)').eq('user_id', user.id).eq('week_start', weekStart(now.isoDay)).maybeSingle(),
+      supabase.from('ma2_available_ingredients').select('ingredient_id').eq('user_id', user.id),
+    ]);
+    const ids = ((plan?.items as { day: string; dish_id: string }[] | undefined) ?? []).filter((i) => i.day === now.isoDay).map((i) => i.dish_id);
+    today = npool.filter((d) => ids.includes(d.id));
+    have = new Set((avail ?? []).map((a) => a.ingredient_id as string));
+  }
+  const ranked = cat ? rankFor(npool, cat.id, today, { have, preferLocal: prefs.includes('plats_locaux'), seed: now.isoDay + (user?.id ?? '') }) : [];
+  const withPhoto = ranked.filter((d) => d.image_url).slice(0, 3);
+  const order = [...withPhoto, ...ranked.filter((d) => !withPhoto.includes(d))];
+  const top = order.length ? order[skip % order.length] : null;
+  const pick = top ? dishes.find((d) => d.id === top.id) ?? null : null;
+  const reason = top && cat ? why(top, cat.id) : null;
   const catName = Object.fromEntries(categories.map((c) => [c.id, c.name]));
   let favs: string[] = [];
   if (user) {
@@ -59,6 +79,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
               <small className="text-xs text-gris">Suggestion pour toi, maintenant</small>
               <h1 className="mt-0.5 text-[22px] font-extrabold leading-tight lg:text-[28px]">{pick.name}</h1>
               <p className="mt-1 text-[13px] text-encre-2">{pick.description}</p>
+              {reason && (
+                <Link href="/equilibre" className="mt-2 flex items-center gap-1.5 text-[12px] font-semibold text-emeraude">
+                  <Icon name="check" size={13} color="#047857" width={2.6} /> {reason}
+                </Link>
+              )}
               <div className="mt-2.5 flex flex-wrap gap-1.5">
                 {pick.prep_minutes ? (
                   <span className="pastille">
