@@ -28,7 +28,7 @@ export async function preparePlan(f: FormData) {
   if (!target.length) go(back, 'err', 'Cette semaine est déjà passée.');
   const planId = await ensurePlan(supabase, user.id, ws);
   const { data: existing } = await supabase.from('ma2_meal_plan_items').select('day, category_id, dish_id').eq('plan_id', planId);
-  const { pool, have, preferLocal } = await loadPool(supabase, user.id, allergies, prefs);
+  const { pool, have } = await loadPool(supabase, user.id, allergies, prefs);
   if (!pool.length) go(back, 'err', 'Aucun plat ne correspond à tes allergies et préférences pour l’instant.');
   const byId = new Map(pool.map((d) => [d.id, d]));
   const ex = existing ?? [];
@@ -40,7 +40,7 @@ export async function preparePlan(f: FormData) {
   for (const d of target) {
     const today = ex.filter((i) => i.day === d);
     const already = today.map((i) => byId.get(i.dish_id)).filter(Boolean) as NonNullable<ReturnType<typeof byId.get>>[];
-    const picks = composeDay(pool, [...MEALS], already, new Set(today.map((i) => i.category_id)), weekUses, legumeDays, { have, preferLocal, seed: user.id + d });
+    const picks = composeDay(pool, [...MEALS], already, new Set(today.map((i) => i.category_id)), weekUses, legumeDays, { have, seed: user.id + d });
     if (!legumeDay(d) && picks.some((p) => p.dish.groups.includes('legumineuses'))) legumeDays++;
     rows.push(...picks.map((p) => ({ plan_id: planId, day: d, category_id: p.category_id, dish_id: p.dish.id })));
   }

@@ -14,7 +14,7 @@ const THEME: Record<string, [string, string]> = {
   ramadan: ['bg-gradient-to-br from-[#1F2A22] to-[#3A4A3E]', 'Ramadan'],
   fete: ['bg-gradient-to-br from-[#D9381E] to-[#FF7A59]', 'Fête'],
   rentree: ['bg-gradient-to-br from-[#B7791F] to-[#FFB020]', 'Rentrée'],
-  local: ['bg-gradient-to-br from-[#B7791F] to-[#FFB020]', 'Plats d’ici'],
+  local: ['bg-gradient-to-br from-[#B7791F] to-[#FFB020]', 'Au quotidien'],
   autre: ['bg-gradient-to-br from-[#5A4FCF] to-[#8E6CF5]', 'Menu'],
 };
 

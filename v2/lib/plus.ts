@@ -25,7 +25,7 @@ export async function loadPool(supabase: SupabaseClient, userId: string, allergi
     supabase.from('ma2_available_ingredients').select('ingredient_id').eq('user_id', userId),
   ]);
   const al = [...allergies, ...(members ?? []).flatMap((m) => m.allergies as string[])];
-  return { pool: filterPool(all, al, prefs), have: new Set((avail ?? []).map((a) => a.ingredient_id as string)), preferLocal: prefs.includes('plats_locaux') };
+  return { pool: filterPool(all, al, prefs), have: new Set((avail ?? []).map((a) => a.ingredient_id as string)) };
 }
 
 export async function ensurePlan(supabase: SupabaseClient, userId: string, ws: string) {

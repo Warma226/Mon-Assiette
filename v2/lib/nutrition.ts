@@ -70,7 +70,7 @@ function hash(s: string) {
 }
 
 // Note d'un plat pour un moment donné, selon ce qui est déjà prévu dans la journée
-export function score(d: NDish, cat: string, st: DayState, ctx: { have: Set<string>; preferLocal: boolean; seed: string }) {
+export function score(d: NDish, cat: string, st: DayState, ctx: { have: Set<string>; seed: string }) {
   if (!d.moments.includes(cat)) return -Infinity;
   if (st.picked.some((p) => p.id === d.id)) return -Infinity; // jamais deux fois le même plat le même jour
   let s = 0;
@@ -100,14 +100,13 @@ export function score(d: NDish, cat: string, st: DayState, ctx: { have: Set<stri
   if (d.is_fried) s -= friedToday ? 5 : 1; // friture : au plus une fois par jour
   s -= (MAIN.includes(cat) ? 3 : 1.2) * (st.weekUses.get(d.id) ?? 0); // variété sur la semaine (plus souple pour fruits et petit-déjeuner)
   if (d.ingredientIds.length) s += 1.5 * (d.ingredientIds.filter((i) => ctx.have.has(i)).length / d.ingredientIds.length);
-  if (ctx.preferLocal && d.tags.includes('local')) s += 0.5;
   return s + 0.4 * hash(ctx.seed + d.id); // départage les ex æquo, sans jamais passer devant un meilleur choix
 }
 
 // Ordre de remplissage : d'abord les repas principaux, puis le reste complète ce qui manque
 const ORDER = ['dejeuner', 'diner', 'petit_dejeuner', 'collation', 'gouter'];
 
-export function composeDay(pool: NDish[], cats: string[], already: NDish[], filledCats: Set<string>, weekUses: Map<string, number>, legumeDaysThisWeek: number, ctx: { have: Set<string>; preferLocal: boolean; seed: string }) {
+export function composeDay(pool: NDish[], cats: string[], already: NDish[], filledCats: Set<string>, weekUses: Map<string, number>, legumeDaysThisWeek: number, ctx: { have: Set<string>; seed: string }) {
   const st: DayState = { picked: [...already], legumeDaysThisWeek, weekUses };
   const out: { category_id: string; dish: NDish }[] = [];
   for (const cat of ORDER.filter((c) => cats.includes(c))) {
@@ -122,7 +121,7 @@ export function composeDay(pool: NDish[], cats: string[], already: NDish[], fill
 }
 
 // Classement pour la suggestion du moment (« Autre idée » avance dans ce classement)
-export function rankFor(pool: NDish[], cat: string, today: NDish[], ctx: { have: Set<string>; preferLocal: boolean; seed: string }) {
+export function rankFor(pool: NDish[], cat: string, today: NDish[], ctx: { have: Set<string>; seed: string }) {
   const st: DayState = { picked: today, legumeDaysThisWeek: 0, weekUses: new Map() };
   return pool.map((d) => ({ d, s: score(d, cat, st, ctx) })).filter((x) => x.s > -Infinity).sort((a, b) => b.s - a.s).map((x) => x.d);
 }

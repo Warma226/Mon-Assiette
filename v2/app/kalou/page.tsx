@@ -18,7 +18,7 @@ export default async function Kalou() {
           {!user ? (
             <Empty title="Discute avec Kalou" text="Connecte-toi d’abord." action={<Link href="/connexion?suite=profil" className="btn-violet h-11 text-sm">Se connecter</Link>} />
           ) : (
-            <PlusGate title="Pose tes questions à Kalou" text="« J’ai du riz et des tomates, je fais quoi ? », « Que manger ce soir avec 1 500 F ? » : Kalou te répond en tenant compte de ta famille, de tes allergies et des plats d’ici." />
+            <PlusGate title="Pose tes questions à Kalou" text="« J’ai du riz et des tomates, je fais quoi ? », « Que manger ce soir avec 1 500 F ? » : Kalou te répond en tenant compte de ta famille, de tes allergies et des règles d’équilibre." />
           )}
         </div>
       </Page>

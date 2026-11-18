@@ -29,7 +29,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
     today = npool.filter((d) => ids.includes(d.id));
     have = new Set((avail ?? []).map((a) => a.ingredient_id as string));
   }
-  const ranked = cat ? rankFor(npool, cat.id, today, { have, preferLocal: prefs.includes('plats_locaux'), seed: now.isoDay + (user?.id ?? '') }) : [];
+  const ranked = cat ? rankFor(npool, cat.id, today, { have, seed: now.isoDay + (user?.id ?? '') }) : [];
   const withPhoto = ranked.filter((d) => d.image_url).slice(0, 3);
   const order = [...withPhoto, ...ranked.filter((d) => !withPhoto.includes(d))];
   const top = order.length ? order[skip % order.length] : null;
