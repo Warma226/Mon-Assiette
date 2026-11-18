@@ -3,7 +3,7 @@
 // Kalou s'appuie sur le catalogue publié et le profil de l'utilisateur ; il n'invente ni prix ni valeur nutritionnelle.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const KEY = (Deno.env.get('GROQ_API_KEY') ?? '').trim();
+let KEY = '';
 const MODELS = (Deno.env.get('MA2_KALOU_MODELS') ?? 'openai/gpt-oss-120b,openai/gpt-oss-20b,qwen/qwen3.8-27b').split(',').map((m) => m.trim()).filter(Boolean);
 const LIMIT = 20;
 const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
@@ -12,11 +12,20 @@ const CORS = {
   'Access-Control-Allow-Headers': 'apikey, authorization, content-type, x-client-info',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
+// Clé lue dans les variables du serveur, sinon dans le coffre (Vault) du projet
+async function secret(name: string) {
+  const env = (Deno.env.get(name) ?? '').trim();
+  if (env) return env;
+  const { data } = await db.rpc('ma2_get_secret', { p_name: name });
+  return String(data ?? '').trim();
+}
+
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return json(405, { error: 'method' });
+  if (!KEY) KEY = await secret('GROQ_API_KEY');
   // Test de configuration : liste des modèles Groq disponibles (ne consomme pas de quota)
   const peek = await req.clone().json().catch(() => ({}));
   if (peek?.action === 'ping') {

@@ -3,10 +3,17 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 // Une clé API valide ne contient ni espace ni retour à la ligne ; sinon on la considère absente.
-const RAW = (Deno.env.get('CHARIOW_API_KEY') ?? '').trim();
-const KEY = /^[\x21-\x7E]{10,}$/.test(RAW) ? RAW : '';
+let KEY = '';
 const API = 'https://api.chariow.com/v1';
 const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
+// Clé lue dans les variables du serveur, sinon dans le coffre (Vault) du projet
+async function secret(name: string) {
+  const env = (Deno.env.get(name) ?? '').trim();
+  if (env) return env;
+  const { data } = await db.rpc('ma2_get_secret', { p_name: name });
+  return String(data ?? '').trim();
+}
+
 const PLANS: Record<string, { price: number; days: number }> = {
   semaine: { price: 650, days: 7 },
   mois: { price: 2500, days: 30 },
@@ -40,6 +47,7 @@ const chariow = (path: string, init: RequestInit = {}) =>
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return json(405, { error: 'method' });
+  if (!KEY) { const raw = await secret('CHARIOW_API_KEY'); KEY = /^[\x21-\x7E]{10,}$/.test(raw) ? raw : ''; }
   let body: { action?: string; key?: string };
   try { body = await req.json(); } catch { body = {}; }
   if (body.action === 'products') {

@@ -3,13 +3,21 @@
 // Gratuit : restaurants proches, 5 recherches/jour. Plus : filtres et recherche par plat, 60 recherches/jour.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const KEY = (Deno.env.get('GOOGLE_PLACES_API_KEY') ?? '').trim();
+let KEY = '';
 const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'apikey, authorization, content-type, x-client-info',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
+// Clé lue dans les variables du serveur, sinon dans le coffre (Vault) du projet
+async function secret(name: string) {
+  const env = (Deno.env.get(name) ?? '').trim();
+  if (env) return env;
+  const { data } = await db.rpc('ma2_get_secret', { p_name: name });
+  return String(data ?? '').trim();
+}
+
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 const FIELDS = ['id', 'displayName', 'formattedAddress', 'location', 'rating', 'userRatingCount', 'priceLevel', 'currentOpeningHours.openNow', 'googleMapsUri', 'primaryTypeDisplayName'].map((f) => 'places.' + f).join(',');
 const PRICE = ['PRICE_LEVEL_INEXPENSIVE', 'PRICE_LEVEL_MODERATE', 'PRICE_LEVEL_EXPENSIVE', 'PRICE_LEVEL_VERY_EXPENSIVE'];
@@ -17,6 +25,7 @@ const PRICE = ['PRICE_LEVEL_INEXPENSIVE', 'PRICE_LEVEL_MODERATE', 'PRICE_LEVEL_E
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return json(405, { error: 'method' });
+  if (!KEY) KEY = await secret('GOOGLE_PLACES_API_KEY');
   const jwt = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
   const { data: auth } = await db.auth.getUser(jwt);
   const user = auth?.user;
