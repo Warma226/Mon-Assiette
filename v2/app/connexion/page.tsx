@@ -23,9 +23,9 @@ export default async function Connexion({ searchParams }: { searchParams: Promis
         <small className="text-[13px] opacity-90">Mieux choisir. Mieux manger.</small>
       </div>
       <div className="mx-auto max-w-md px-5 pt-6">
-        <h1 className="text-[22px] font-bold">Connecte-toi</h1>
+        <h1 className="text-[22px] font-bold">Bienvenue</h1>
         <p className="mb-4 mt-1 text-[13px] text-gris">Pour garder tes favoris, tes ingrédients et ton planning sur tous tes appareils.</p>
-        {erreur && <p role="alert" className="mb-3 rounded-2xl bg-corail-l px-4 py-3 text-[13px] text-[#8A2512]">Le lien de connexion n’est plus valable. Demande-en un nouveau.</p>}
+        {erreur && <p role="alert" className="mb-3 rounded-2xl bg-corail-l px-4 py-3 text-[13px] text-[#8A2512]">Ce lien n’est plus valable. Connecte-toi avec ton mot de passe, ou redemande un lien.</p>}
         <LoginForm next={next} />
         <Link href="/" className="mt-5 block text-center text-sm font-semibold text-violet-d">
           Découvrir sans compte

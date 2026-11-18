@@ -51,6 +51,16 @@ export default async function Profil() {
           </span>
           <Icon name="next" size={18} />
         </Link>
+        <Link href="/mot-de-passe" className="carte mt-3 flex items-center gap-3 px-4 py-3.5">
+          <span className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-lilas-2">
+            <Icon name="lock" size={20} color="#6C3CF0" width={2.2} />
+          </span>
+          <span className="flex-1">
+            <b className="block text-sm">Mon mot de passe</b>
+            <small className="text-xs text-gris">Créer ou changer mon mot de passe</small>
+          </span>
+          <Icon name="next" size={18} />
+        </Link>
         <Link href="/assistant" className="carte mt-3 flex items-center gap-3 px-4 py-3.5">
           <span className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-violet">
             <Icon name="sun" size={20} color="#fff" width={2.2} />

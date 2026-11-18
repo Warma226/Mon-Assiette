@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-const ALLOWED = ['/', '/favoris', '/planning', '/profil', '/ingredients', '/decouvrir', '/abonnement', '/admin'];
+const ALLOWED = ['/', '/favoris', '/planning', '/profil', '/ingredients', '/decouvrir', '/abonnement', '/admin', '/mot-de-passe', '/assistant'];
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
