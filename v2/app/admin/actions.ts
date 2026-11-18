@@ -40,7 +40,7 @@ export async function saveDish(f: FormData) {
   if (!moments.length) back(path, 'err', 'Choisis au moins un moment de la journée.');
   const { error } = await supabase
     .from('ma2_dishes')
-    .update({ name, description, prep_minutes: prep, servings, difficulty, category_id: str(f, 'category_id'), status, moments, is_fried: f.get('is_fried') === 'on', is_sweet: f.get('is_sweet') === 'on' })
+    .update({ name, description, prep_minutes: prep, servings, difficulty, category_id: str(f, 'category_id'), status, moments, is_fried: f.get('is_fried') === 'on', is_sweet: f.get('is_sweet') === 'on', is_light: f.get('is_light') === 'on' })
     .eq('id', id);
   if (error) back(path, 'err', 'Enregistrement refusé : ' + error.message);
   revalidatePath('/', 'layout');

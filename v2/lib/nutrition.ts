@@ -17,6 +17,7 @@ export type NDish = {
   tags: string[];
   is_fried: boolean;
   is_sweet: boolean;
+  is_light: boolean;
   image_url: string | null;
   groups: Group[];
   ingredientIds: string[];
@@ -40,7 +41,7 @@ export const hasProtein = (d: NDish) => has(d, 'proteines') || has(d, 'legumineu
 export async function loadNutriPool(supabase: SupabaseClient): Promise<NDish[]> {
   const { data } = await supabase
     .from('ma2_dishes')
-    .select('id, slug, name, category_id, moments, allergens, tags, is_fried, is_sweet, image_url, di:ma2_dish_ingredients(is_optional, ingredient:ma2_ingredients(id, food_group, shelf))')
+    .select('id, slug, name, category_id, moments, allergens, tags, is_fried, is_sweet, is_light, image_url, di:ma2_dish_ingredients(is_optional, ingredient:ma2_ingredients(id, food_group, shelf))')
     .eq('status', 'publie');
   type Row = Omit<NDish, 'groups' | 'ingredientIds' | 'meatShelf'> & { di: { is_optional: boolean; ingredient: { id: string; food_group: Group | null; shelf: string | null } | null }[] };
   return ((data ?? []) as unknown as Row[]).map(({ di, ...d }) => {
@@ -151,4 +152,19 @@ export function dayBalance(dishes: NDish[]) {
     sweet: dishes.filter((d) => d.is_sweet).length,
     fried: dishes.filter((d) => d.is_fried).length,
   };
+}
+
+// Fin de soirée (à partir de 21 h et jusqu'à 4 h) : on ne propose que du léger.
+// Un repas lourd, gras ou riche en légumineuses juste avant de dormir se digère mal et gêne le sommeil.
+export const LATE_FROM = 21;
+export const isLate = (hour: number) => hour >= LATE_FROM || hour < 4;
+export const LATE_TIP = 'Il est tard : un repas lourd juste avant de dormir se digère mal. Si tu as encore faim, prends quelque chose de léger, en petite quantité.';
+
+export function rankLate(pool: NDish[], today: NDish[], ctx: { seed: string }) {
+  const eaten = new Set(today.map((d) => d.id));
+  return pool
+    .filter((d) => d.is_light && !d.is_fried && !has(d, 'legumineuses'))
+    .map((d) => ({ d, s: (has(d, 'fruits') || has(d, 'legumes') ? 2 : 0) - (d.is_sweet ? 3 : 0) - (eaten.has(d.id) ? 2 : 0) + 0.4 * hash(ctx.seed + d.id) }))
+    .sort((a, b) => b.s - a.s)
+    .map((x) => x.d);
 }

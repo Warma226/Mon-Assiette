@@ -56,16 +56,16 @@ Deno.serve(async (req) => {
   if ((used.data ?? -1) < 0) return json(429, { error: 'quota' });
 
   const [{ data: dishes }, { data: allergies }, { data: prefs }, { data: members }, { data: avail }, { data: history }] = await Promise.all([
-    db.from('ma2_dishes').select('slug, name, category_id, moments, tags, allergens, prep_minutes, is_fried, is_sweet, di:ma2_dish_ingredients(ingredient:ma2_ingredients(name, food_group))').eq('status', 'publie'),
+    db.from('ma2_dishes').select('slug, name, category_id, moments, tags, allergens, prep_minutes, is_fried, is_sweet, is_light, di:ma2_dish_ingredients(ingredient:ma2_ingredients(name, food_group))').eq('status', 'publie'),
     db.from('ma2_user_allergies').select('allergen_id').eq('user_id', user.id),
     db.from('ma2_user_preferences').select('preference_id').eq('user_id', user.id),
     db.from('ma2_household_members').select('name, kind, allergies').eq('user_id', user.id),
     db.from('ma2_available_ingredients').select('ingredient:ma2_ingredients(name)').eq('user_id', user.id),
     db.from('ma2_kalou_messages').select('role, content').eq('user_id', user.id).order('created_at', { ascending: false }).limit(12),
   ]);
-  type D = { slug: string; name: string; category_id: string; moments: string[]; tags: string[]; allergens: string[]; prep_minutes: number | null; is_fried: boolean; is_sweet: boolean; di: { ingredient: { name: string; food_group: string | null } | null }[] };
+  type D = { slug: string; name: string; category_id: string; moments: string[]; tags: string[]; allergens: string[]; prep_minutes: number | null; is_fried: boolean; is_sweet: boolean; is_light: boolean; di: { ingredient: { name: string; food_group: string | null } | null }[] };
   const catalogue = ((dishes ?? []) as unknown as D[])
-    .map((d) => `- ${d.name} (/plat/${d.slug}) moments: ${d.moments.join('/')}; ${d.di.map((x) => x.ingredient?.name).filter(Boolean).join(', ')}; groupes: ${[...new Set(d.di.map((x) => x.ingredient?.food_group).filter((g) => g && g !== 'condiments'))].join(', ')}${d.is_fried ? '; frit' : ''}${d.is_sweet ? '; sucré' : ''}${d.allergens.length ? `; allergènes: ${d.allergens.join(', ')}` : ''}`)
+    .map((d) => `- ${d.name} (/plat/${d.slug}) moments: ${d.moments.join('/')}; ${d.di.map((x) => x.ingredient?.name).filter(Boolean).join(', ')}; groupes: ${[...new Set(d.di.map((x) => x.ingredient?.food_group).filter((g) => g && g !== 'condiments'))].join(', ')}${d.is_fried ? '; frit' : ''}${d.is_sweet ? '; sucré' : ''}${d.is_light ? '; léger' : ''}${d.allergens.length ? `; allergènes: ${d.allergens.join(', ')}` : ''}`)
     .join('\n');
   const tz = prof?.timezone || 'Africa/Ouagadougou';
   const now = new Intl.DateTimeFormat('fr-FR', { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }).format(new Date());
@@ -82,6 +82,7 @@ Règles :
 - Exclus toujours les plats qui contiennent un allergène de l'utilisateur ou d'un membre de sa famille.
 - Tes conseils suivent les repères de l'OMS et des guides alimentaires d'Afrique de l'Ouest (FAO) : varier chaque jour céréales ou tubercules, protéines (légumineuses, poisson, œuf, viande, lait), légumes et fruits ; au moins 2 repas avec des légumes et un fruit par jour ; légumineuses plusieurs fois par semaine, plutôt dans un repas principal ; repas principaux complets (base + protéine + légumes) ; petit-déjeuner et collations légers, sans friture ; au plus un plat sucré et un plat frit par jour ; peu de sel.
 - Ne propose un plat qu'aux moments indiqués pour lui dans le catalogue.
+- Fin de soirée (à partir de 21 h, regarde l'heure ci-dessous) : ne propose rien de lourd, gras, frit ni de légumineuses. Seulement les plats marqués « léger » ou un fruit, en petite quantité, et dis en une phrase qu'un repas lourd juste avant de dormir se digère mal.
 - Tu n'es pas médecin : pour une maladie, une grossesse, un bébé, un régime médical ou une allergie grave, donne seulement des conseils généraux et invite à consulter un professionnel de santé.
 - Tu peux orienter vers les écrans de l'appli : /assistant (préparer la journée ou la semaine), /courses, /budget, /menus, /restaurants, /planning.
 - Reste sur l'alimentation, la cuisine, les courses et l'organisation des repas ; ramène poliment la conversation sur ces sujets sinon.

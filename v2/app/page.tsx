@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { getCategories, getDishes, getSession, isPlus } from '@/lib/data';
 import { currentCategory, DEFAULT_TZ, greeting, localNow } from '@/lib/time';
-import { DAY_GOALS, dayBalance, filterPool, loadNutriPool, rankFor, why, type NDish } from '@/lib/nutrition';
+import { DAY_GOALS, dayBalance, filterPool, isLate, LATE_TIP, loadNutriPool, rankFor, rankLate, why, type NDish } from '@/lib/nutrition';
 import { weekStart } from '@/lib/week';
 import { DishCard, DishImage, Page } from '@/components/ui';
 import { Icon } from '@/components/Icon';
@@ -29,12 +29,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
     today = npool.filter((d) => ids.includes(d.id));
     have = new Set((avail ?? []).map((a) => a.ingredient_id as string));
   }
-  const ranked = cat ? rankFor(npool, cat.id, today, { have, seed: now.isoDay + (user?.id ?? '') }) : [];
+  const late = isLate(now.hour);
+  const ranked = late ? rankLate(npool, today, { seed: now.isoDay + (user?.id ?? '') }) : cat ? rankFor(npool, cat.id, today, { have, seed: now.isoDay + (user?.id ?? '') }) : [];
   const withPhoto = ranked.filter((d) => d.image_url).slice(0, 3);
   const order = [...withPhoto, ...ranked.filter((d) => !withPhoto.includes(d))];
   const top = order.length ? order[skip % order.length] : null;
   const pick = top ? dishes.find((d) => d.id === top.id) ?? null : null;
-  const reason = top && cat ? why(top, cat.id) : null;
+  const reason = late ? (top ? 'Léger et facile à digérer avant de dormir' : null) : top && cat ? why(top, cat.id) : null;
   const catName = Object.fromEntries(categories.map((c) => [c.id, c.name]));
   let favs: string[] = [];
   if (user) {
@@ -70,15 +71,16 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
             <div className="relative lg:w-1/2">
               <DishImage dish={pick} rounded="rounded-none" className="h-[200px] w-full lg:h-full lg:min-h-[280px]" />
               <span className="absolute left-3 top-3 flex h-[30px] items-center gap-1.5 rounded-full bg-violet px-3 text-xs font-semibold text-white">
-                <Icon name="clock" size={13} color="#fff" width={2.4} /> {cat?.name} · {now.time}
+                <Icon name="clock" size={13} color="#fff" width={2.4} /> {late ? 'Fin de soirée' : cat?.name} · {now.time}
               </span>
               <div className="absolute right-2.5 top-2.5">
                 <FavButton dishId={pick.id} initial={favs.includes(pick.id)} loggedIn={!!user} />
               </div>
             </div>
             <div className="p-4 lg:w-1/2 lg:p-6">
-              <small className="text-xs text-gris">Suggestion pour toi, maintenant</small>
+              <small className="text-xs text-gris">{late ? 'Pour passer une bonne nuit' : 'Suggestion pour toi, maintenant'}</small>
               <h1 className="mt-0.5 text-[22px] font-extrabold leading-tight lg:text-[28px]">{pick.name}</h1>
+              {late && <p className="mt-1.5 rounded-xl bg-lilas-2 px-3 py-2 text-[12.5px] text-violet-d">{LATE_TIP}</p>}
               <p className="mt-1 text-[13px] text-encre-2">{pick.description}</p>
               {reason && (
                 <Link href="/equilibre" className="mt-2 flex items-center gap-1.5 text-[12px] font-semibold text-emeraude">
@@ -105,7 +107,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
             </div>
           </section>
         ) : (
-          <section className="carte p-6 text-center text-sm text-gris">Le catalogue arrive bientôt.</section>
+          <section className="carte p-6 text-center text-sm text-gris">{late ? LATE_TIP : 'Le catalogue arrive bientôt.'}</section>
         )}
 
         <div className="flex flex-col gap-4">

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { getCategories, getDishes, getSession, isPlus } from '@/lib/data';
 import { currentCategory, DEFAULT_TZ, localNow } from '@/lib/time';
-import { filterPool, loadNutriPool, rankFor, type NDish } from '@/lib/nutrition';
+import { filterPool, isLate, LATE_TIP, loadNutriPool, rankFor, rankLate, type NDish } from '@/lib/nutrition';
 import { weekStart } from '@/lib/week';
 import { Page, TopBar } from '@/components/ui';
 import { Wheel } from '@/components/Wheel';
@@ -28,13 +28,18 @@ export default async function Roue() {
     have = new Set((avail ?? []).map((a) => a.ingredient_id as string));
   }
   const ranks = Object.fromEntries(categories.map((c) => [c.id, rankFor(pool, c.id, today, { have, seed: now.isoDay + (user?.id ?? '') }).slice(0, 8).map((d) => d.id)]));
+  // Fin de soirée : un choix « léger » en plus, sélectionné par défaut
+  const late = isLate(now.hour);
+  if (late) ranks.tard = rankLate(pool, today, { seed: now.isoDay + (user?.id ?? '') }).slice(0, 8).map((d) => d.id);
   const keep = new Set(Object.values(ranks).flat());
+  const cats = [...(late ? [{ id: 'tard', name: 'Fin de soirée' }] : []), ...categories.map((c) => ({ id: c.id, name: c.name }))];
   return (
     <Page>
       <TopBar title="La roue de Kalou" />
       <Wheel
-        categories={categories.map((c) => ({ id: c.id, name: c.name }))}
-        initialCategory={cat?.id ?? 'dejeuner'}
+        categories={cats}
+        initialCategory={late ? 'tard' : cat?.id ?? 'dejeuner'}
+        tip={late ? LATE_TIP : null}
         dishes={dishes.filter((d) => keep.has(d.id)).map((d) => ({ id: d.id, slug: d.slug, name: d.name, image_url: d.image_url, category_id: d.category_id, moments: d.moments }))}
         ranks={ranks}
         unlimited={isPlus(profile)}

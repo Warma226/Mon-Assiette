@@ -8,7 +8,7 @@ export default async function AdminDish({ params, searchParams }: { params: Prom
   const [{ id }, { ok, err }] = await Promise.all([params, searchParams]);
   const { supabase } = await requireStaff();
   const [{ data: d }, { data: cats }] = await Promise.all([
-    supabase.from('ma2_dishes').select('id, slug, name, description, prep_minutes, servings, difficulty, category_id, status, moments, is_fried, is_sweet').eq('id', id).maybeSingle(),
+    supabase.from('ma2_dishes').select('id, slug, name, description, prep_minutes, servings, difficulty, category_id, status, moments, is_fried, is_sweet, is_light').eq('id', id).maybeSingle(),
     supabase.from('ma2_meal_categories').select('id, name').order('sort'),
   ]);
   if (!d) notFound();
@@ -66,6 +66,7 @@ export default async function AdminDish({ params, searchParams }: { params: Prom
         <div className="flex flex-wrap gap-4 text-sm">
           <label className="flex items-center gap-2"><input type="checkbox" name="is_fried" defaultChecked={d.is_fried} className="h-4 w-4 accent-[#6C3CF0]" /> Plat frit</label>
           <label className="flex items-center gap-2"><input type="checkbox" name="is_sweet" defaultChecked={d.is_sweet} className="h-4 w-4 accent-[#6C3CF0]" /> Plat sucré</label>
+          <label className="flex items-center gap-2"><input type="checkbox" name="is_light" defaultChecked={d.is_light} className="h-4 w-4 accent-[#6C3CF0]" /> Léger : peut être proposé tard le soir</label>
         </div>
         <p className="mt-4 text-[12px] text-gris">Ne remplis une valeur que si elle est vérifiée. Un champ vide n’est pas affiché dans l’appli.</p>
         <div className="mt-4 flex flex-wrap gap-2">

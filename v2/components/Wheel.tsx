@@ -7,7 +7,7 @@ type D = { id: string; slug: string; name: string; image_url: string | null; cat
 const COLS = ['#6C3CF0', '#FFB020', '#047857', '#D9381E', '#8E6CF5', '#FF8A3D', '#0F766E', '#B45309'];
 const FREE_SPINS = 3;
 
-export function Wheel({ categories, initialCategory, dishes, ranks, unlimited, day }: { categories: { id: string; name: string }[]; initialCategory: string; dishes: D[]; ranks: Record<string, string[]>; unlimited: boolean; day: string }) {
+export function Wheel({ categories, initialCategory, dishes, ranks, unlimited, day, tip }: { categories: { id: string; name: string }[]; initialCategory: string; dishes: D[]; ranks: Record<string, string[]>; unlimited: boolean; day: string; tip?: string | null }) {
   const [cat, setCat] = useState(initialCategory);
   const [angle, setAngle] = useState(0);
   const [spinning, setSpinning] = useState(false);
@@ -63,6 +63,7 @@ export function Wheel({ categories, initialCategory, dishes, ranks, unlimited, d
   return (
     <div className="px-5 text-center">
       <p className="mb-3 text-[13px] text-gris">Choisis le moment. La roue tourne parmi les plats qui équilibrent le mieux ta journée.</p>
+      {tip && cat === 'tard' && <p className="mb-3 rounded-xl bg-lilas-2 px-3 py-2 text-left text-[12.5px] text-violet-d">{tip}</p>}
       <div className="flex flex-wrap justify-center gap-1.5">
         {categories.map((c) => (
           <button key={c.id} type="button" onClick={() => !spinning && setCat(c.id)} aria-pressed={c.id === cat} className={`pastille h-[34px] ${c.id === cat ? 'pastille-on' : 'bg-white'}`}>

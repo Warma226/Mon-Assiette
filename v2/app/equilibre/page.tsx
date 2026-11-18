@@ -10,6 +10,7 @@ const RULES: [string, string][] = [
   ['Des légumineuses plusieurs fois par semaine', 'Haricot (niébé), arachide, sésame, zamnè : de bonnes protéines végétales, plutôt dans un repas principal.'],
   ['Repas principaux complets', 'Au déjeuner et au dîner : une base (tô, riz, igname…), une protéine et des légumes.'],
   ['Petit-déjeuner et collations légers', 'Pas de friture le matin ; aux collations, un fruit plutôt qu’un plat sucré.'],
+  ['Léger en fin de soirée', 'À partir de 21 h, l’appli ne propose que des plats légers : un repas lourd, gras ou à base de légumineuses juste avant de dormir se digère mal.'],
   ['Moins de sucre, de sel et de friture', 'Au plus un plat sucré et un plat frit par jour. L’OMS recommande moins de 5 g de sel par jour.'],
   ['Pas deux fois le même plat', 'Jamais le même plat deux fois dans la journée, et le moins possible dans la semaine.'],
   ['Chaque plat à son moment', 'Un plat n’est proposé qu’aux moments de la journée où il se mange habituellement.'],
