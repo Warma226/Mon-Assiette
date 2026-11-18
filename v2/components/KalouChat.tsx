@@ -55,7 +55,7 @@ export function KalouChat({ history, name }: { history: Msg[]; name: string | nu
         <div className="flex items-end gap-2">
           <img src="/kalou-joie.svg" alt="" width={36} height={36} className="flex-none" />
           <p className="max-w-[85%] rounded-[20px] rounded-bl-md bg-white px-4 py-3 text-sm shadow-[0_4px_14px_rgba(76,46,170,0.06)]">
-            Salut{name ? ` ${name}` : ''} ! Je suis Kalou. Dis-moi ce que tu as à la maison, ton budget ou ton envie, et je te propose quoi manger.
+            Salut{name ? ` ${name}` : ''} ! Moi c’est Kalou, l’ami de ton ventre. Dis-moi ce qu’il y a dans ta cuisine, je m’occupe du reste.
           </p>
         </div>
         {msgs.map((m, i) =>
@@ -68,7 +68,7 @@ export function KalouChat({ history, name }: { history: Msg[]; name: string | nu
             </div>
           ),
         )}
-        {busy && <p className="ml-11 text-xs text-gris">Kalou réfléchit…</p>}
+        {busy && <p className="ml-11 text-xs text-gris">Kalou soulève les couvercles…</p>}
         <div ref={end} />
       </div>
       {msgs.length === 0 && (
