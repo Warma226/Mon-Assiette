@@ -20,7 +20,7 @@ const COMPARE: [string, string, string][] = [
   ['Courses', '—', 'Liste automatique, rangée par rayon, partage WhatsApp'],
   ['Budget', 'Indiquer son budget', 'Suivi des dépenses et alerte avant de dépasser'],
   ['Rappels', '—', 'Repas, eau, décongélation, marché (notifications)'],
-  ['Kalou en discussion', '—', '30 questions par jour'],
+  ['Kalou en discussion', '—', '20 questions par jour'],
   ['Menus', '1 menu découverte', 'Tous les menus : moderne, fête, Ramadan, famille…'],
   ['Restaurants', 'Les plus proches (5 recherches/jour)', 'Recherche par plat, filtres, favoris (60/jour)'],
   ['Famille', 'Mes allergies', 'Profils de toute la famille, allergies de chacun'],

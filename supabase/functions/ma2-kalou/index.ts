@@ -1,10 +1,11 @@
-// Mon Assiette v2 : discussion avec Kalou (réservée à Plus). Clé IA sur le serveur (secret ANTHROPIC_API_KEY).
+// Mon Assiette v2 : discussion avec Kalou (réservée à Plus).
+// IA gratuite Groq (secret GROQ_API_KEY), modèles ouverts ; si un modèle est saturé, on essaie le suivant.
 // Kalou s'appuie sur le catalogue publié et le profil de l'utilisateur ; il n'invente ni prix ni valeur nutritionnelle.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const KEY = (Deno.env.get('ANTHROPIC_API_KEY') ?? '').trim();
-const MODEL = Deno.env.get('MA2_KALOU_MODEL') ?? 'claude-haiku-5-5';
-const LIMIT = 30;
+const KEY = (Deno.env.get('GROQ_API_KEY') ?? '').trim();
+const MODELS = (Deno.env.get('MA2_KALOU_MODELS') ?? 'openai/gpt-oss-120b,openai/gpt-oss-20b,qwen/qwen3.8-27b').split(',').map((m) => m.trim()).filter(Boolean);
+const LIMIT = 20;
 const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -47,7 +48,7 @@ Deno.serve(async (req) => {
   ]);
   type D = { slug: string; name: string; category_id: string; tags: string[]; allergens: string[]; prep_minutes: number | null; di: { ingredient: { name: string } | null }[] };
   const catalogue = ((dishes ?? []) as unknown as D[])
-    .map((d) => `- ${d.name} [/plat/${d.slug}] moment=${d.category_id}; ingrédients: ${d.di.map((x) => x.ingredient?.name).filter(Boolean).join(', ')}${d.allergens.length ? `; allergènes: ${d.allergens.join(', ')}` : ''}${d.prep_minutes ? `; ${d.prep_minutes} min` : ''}`)
+    .map((d) => `- ${d.name} (/plat/${d.slug}) ${d.category_id}: ${d.di.map((x) => x.ingredient?.name).filter(Boolean).join(', ')}${d.allergens.length ? ` | allergènes: ${d.allergens.join(', ')}` : ''}`)
     .join('\n');
   const tz = prof?.timezone || 'Africa/Ouagadougou';
   const now = new Intl.DateTimeFormat('fr-FR', { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }).format(new Date());
@@ -74,17 +75,29 @@ Contexte de l'utilisateur :
 Catalogue des plats publiés :
 ${catalogue}`;
 
-  const past = (history ?? []).reverse().map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+  const past = (history ?? []).reverse().slice(-8).map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content.slice(0, 1500) }));
   while (past.length && past[0].role !== 'user') past.shift();
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'x-api-key': KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: MODEL, max_tokens: 600, system, messages: [...past, { role: 'user', content: message }] }),
-  });
-  const g = await r.json().catch(() => null);
-  if (r.status === 401 || r.status === 403) return json(503, { error: 'not_configured' });
-  if (!r.ok) return json(502, { error: 'ai', status: r.status });
-  const reply = String((g?.content ?? []).filter((c: { type: string }) => c.type === 'text').map((c: { text: string }) => c.text).join('\n')).trim().slice(0, 4000) || 'Désolé, je n’ai pas compris. Peux-tu reformuler ?';
+  const messages = [{ role: 'system', content: system }, ...past, { role: 'user', content: message }];
+
+  let reply = '';
+  let busy = false;
+  for (const model of MODELS) {
+    const ask = (extra: Record<string, unknown>) =>
+      fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, messages, temperature: 0.6, max_completion_tokens: 900, ...extra }),
+      });
+    let r = await ask(model.startsWith('openai/gpt-oss') ? { reasoning_effort: 'low', include_reasoning: false } : {});
+    if (r.status === 400) r = await ask({});
+    if (r.status === 401 || r.status === 403) return json(503, { error: 'not_configured' });
+    if (r.status === 429 || r.status === 404 || r.status >= 500) { busy = busy || r.status === 429; continue; }
+    const g = await r.json().catch(() => null);
+    if (!r.ok) continue;
+    reply = String(g?.choices?.[0]?.message?.content ?? '').replace(/<think>[\s\S]*?<\/think>/g, '').trim().slice(0, 4000);
+    if (reply) break;
+  }
+  if (!reply) return json(busy ? 429 : 502, { error: busy ? 'busy' : 'ai' });
   const t = Date.now();
   await db.from('ma2_kalou_messages').insert([
     { user_id: user.id, role: 'user', content: message, created_at: new Date(t).toISOString() },

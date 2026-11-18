@@ -8,6 +8,7 @@ type Msg = { role: 'user' | 'assistant'; content: string };
 const ERR: Record<string, string> = {
   not_configured: 'Je ne peux pas encore répondre : ma connexion n’est pas finie de régler. Réessaie bientôt !',
   quota: 'On a beaucoup discuté aujourd’hui ! Reviens demain pour de nouvelles questions.',
+  busy: 'Beaucoup de monde me parle en ce moment. Réessaie dans une minute !',
   plus: 'La discussion avec moi fait partie de Mon Assiette Plus.',
   login: 'Reconnecte-toi pour continuer.',
 };
