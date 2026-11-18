@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { getCategories, getDishes, getSession, isPlus } from '@/lib/data';
 import { currentCategory, DEFAULT_TZ, greeting, localNow } from '@/lib/time';
-import { filterPool, loadNutriPool, rankFor, why, type NDish } from '@/lib/nutrition';
+import { DAY_GOALS, dayBalance, filterPool, loadNutriPool, rankFor, why, type NDish } from '@/lib/nutrition';
 import { weekStart } from '@/lib/week';
 import { DishCard, DishImage, Page } from '@/components/ui';
 import { Icon } from '@/components/Icon';
@@ -42,6 +42,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
     favs = (data ?? []).map((r) => r.dish_id as string);
   }
   const name = profile?.display_name?.split(' ')[0];
+  const bal = dayBalance(today);
   const others = dishes.filter((d) => d.id !== pick?.id && d.image_url).slice(0, 6);
 
   return (
@@ -119,16 +120,32 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
               <span className="tuile-ic"><Icon name="bowl" size={24} color="#fff" width={2.2} /></span>Mes ingrédients
             </Link>
           </div>
-          <section className="relative h-40 overflow-hidden rounded-3xl bg-gradient-to-br from-[#ffd54a] to-[#ffa51f] p-5 lg:h-auto lg:flex-1">
-            <span className="absolute -right-8 -top-8 h-36 w-36 rounded-full bg-white/20" />
-            <div className="relative max-w-[190px]">
-              <h2 className="text-[23px] font-extrabold leading-tight">La roue de Kalou</h2>
-              <p className="mb-3 mt-1.5 text-[12.5px] text-[#4a3500]">Tu hésites ? Kalou choisit pour toi.</p>
-              <Link href="/roue" className="inline-flex h-10 items-center rounded-full bg-white px-4 text-[13px] font-semibold">
-                Tourner la roue
-              </Link>
+          <section className="carte p-4 lg:flex-1" aria-label="Ma journée">
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="text-[17px] font-extrabold">Ma journée</h2>
+              <Link href="/equilibre" className="text-[12px] font-semibold text-violet-d">Les repères ›</Link>
             </div>
-            <img src="/kalou-bravo.svg" alt="" width={150} height={150} className="absolute -bottom-2 right-1" />
+            {user && today.length ? (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  {DAY_GOALS.map((g) => {
+                    const ok = bal[g.id as 'cereales' | 'proteines' | 'legumes' | 'fruits'];
+                    return (
+                      <span key={g.id} className={`flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[12px] font-semibold ${ok ? 'bg-emeraude-l text-emeraude' : 'bg-soleil-l text-[#8A5A00]'}`}>
+                        <Icon name={ok ? 'check' : 'alert'} size={13} width={2.6} /> {g.label}
+                      </span>
+                    );
+                  })}
+                </div>
+                {(bal.sweet > 1 || bal.fried > 1) && <p className="mt-2 text-[12px] text-corail">Attention : {bal.sweet > 1 ? 'plusieurs plats sucrés' : 'plusieurs plats frits'} aujourd’hui.</p>}
+                <Link href="/planning" className="mt-3 inline-flex h-10 items-center rounded-full bg-lilas-2 px-4 text-[13px] font-semibold text-violet-d">Voir mes repas du jour</Link>
+              </>
+            ) : (
+              <>
+                <p className="text-[13px] text-encre-2">Ajoute tes repas d’aujourd’hui à ton planning : tu verras ce qui manque pour une journée équilibrée.</p>
+                <Link href={user ? '/planning' : '/connexion'} className="mt-3 inline-flex h-10 items-center rounded-full bg-violet px-4 text-[13px] font-semibold text-white">{user ? 'Remplir ma journée' : 'Se connecter'}</Link>
+              </>
+            )}
           </section>
         </div>
       </div>
