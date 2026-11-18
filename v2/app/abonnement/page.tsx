@@ -24,6 +24,7 @@ const COMPARE: [string, string, string][] = [
   ['Menus', '1 menu découverte', 'Tous les menus : moderne, fête, Ramadan, famille…'],
   ['Restaurants', 'Les plus proches (5 recherches/jour)', 'Recherche par plat, filtres, favoris (60/jour)'],
   ['Famille', 'Mes allergies', 'Profils de toute la famille, allergies de chacun'],
+  ['Roue de Kalou', '3 tours par jour', 'Illimitée'],
 ];
 
 export default async function Abonnement() {

@@ -120,14 +120,29 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
               <span className="tuile-ic"><Icon name="bowl" size={24} color="#fff" width={2.2} /></span>Mes ingrédients
             </Link>
           </div>
-          <section className="carte p-4 lg:flex-1" aria-label="Ma journée">
+          <section className="relative h-40 overflow-hidden rounded-3xl bg-gradient-to-br from-[#ffd54a] to-[#ffa51f] p-5 lg:h-auto lg:flex-1">
+            <span className="absolute -right-8 -top-8 h-36 w-36 rounded-full bg-white/20" />
+            <div className="relative max-w-[190px]">
+              <h2 className="text-[23px] font-extrabold leading-tight">La roue de Kalou</h2>
+              <p className="mb-3 mt-1.5 text-[12.5px] text-[#4a3500]">Tu hésites ? Tourne, mange, c’est réglé.</p>
+              <Link href="/roue" className="inline-flex h-10 items-center rounded-full bg-white px-4 text-[13px] font-semibold">
+                Tourner la roue
+              </Link>
+            </div>
+            <img src="/kalou-bravo.svg" alt="" width={150} height={150} className="absolute -bottom-2 right-1" />
+          </section>
+        </div>
+      </div>
+
+      <div className="px-5 pt-4">
+          <section className="carte p-4" aria-label="Ma journée">
             <div className="mb-2 flex items-center justify-between">
               <h2 className="text-[17px] font-extrabold">Ma journée</h2>
               <Link href="/equilibre" className="text-[12px] font-semibold text-violet-d">Les repères ›</Link>
             </div>
             {user && today.length ? (
               <>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {DAY_GOALS.map((g) => {
                     const ok = bal[g.id as 'cereales' | 'proteines' | 'legumes' | 'fruits'];
                     return (
@@ -147,7 +162,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
               </>
             )}
           </section>
-        </div>
       </div>
 
       <section className="grid gap-3 px-5 pt-4 sm:grid-cols-3">
