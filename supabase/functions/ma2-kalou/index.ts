@@ -17,6 +17,14 @@ const json = (status: number, body: unknown) => new Response(JSON.stringify(body
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return json(405, { error: 'method' });
+  // Test de configuration : liste des modèles Groq disponibles (ne consomme pas de quota)
+  const peek = await req.clone().json().catch(() => ({}));
+  if (peek?.action === 'ping') {
+    if (!KEY) return json(200, { configured: false });
+    const m = await fetch('https://api.groq.com/openai/v1/models', { headers: { Authorization: `Bearer ${KEY}` } }).catch(() => null);
+    const list = m && m.ok ? ((await m.json()).data ?? []).map((x: { id: string }) => x.id) : [];
+    return json(200, { configured: true, status: m?.status ?? null, available: MODELS.filter((x) => list.includes(x)) });
+  }
   const jwt = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
   const { data: auth } = await db.auth.getUser(jwt);
   const user = auth?.user;
