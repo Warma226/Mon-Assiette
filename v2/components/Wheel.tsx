@@ -8,7 +8,7 @@ const COLS = ['#6C3CF0', '#FFB020', '#047857', '#D9381E', '#8E6CF5', '#FF8A3D', 
 const FREE_SPINS = 3;
 
 export function Wheel({ categories, initialCategory, dishes, ranks, unlimited, day, tip }: { categories: { id: string; name: string }[]; initialCategory: string; dishes: D[]; ranks: Record<string, string[]>; unlimited: boolean; day: string; tip?: string | null }) {
-  const [cat, setCat] = useState(initialCategory);
+  const cat = initialCategory;
   const [angle, setAngle] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [winner, setWinner] = useState<D | null>(null);
@@ -62,15 +62,8 @@ export function Wheel({ categories, initialCategory, dishes, ranks, unlimited, d
 
   return (
     <div className="px-5 text-center">
-      <p className="mb-3 text-[13px] text-gris">Choisis le moment. La roue tourne parmi les plats qui équilibrent le mieux ta journée.</p>
-      {tip && cat === 'tard' && <p className="mb-3 rounded-xl bg-lilas-2 px-3 py-2 text-left text-[12.5px] text-violet-d">{tip}</p>}
-      <div className="flex flex-wrap justify-center gap-1.5">
-        {categories.map((c) => (
-          <button key={c.id} type="button" onClick={() => !spinning && setCat(c.id)} aria-pressed={c.id === cat} className={`pastille h-[34px] ${c.id === cat ? 'pastille-on' : 'bg-white'}`}>
-            {c.name}
-          </button>
-        ))}
-      </div>
+      <p className="mb-3 text-[13px] text-gris">{categories.find((c) => c.id === cat)?.name ?? 'Maintenant'} : tourne, la roue choisit parmi les plats qui équilibrent le mieux ta journée.</p>
+      {tip && cat === 'tard' && <p className="mb-3 mt-1 rounded-xl bg-lilas-2 px-3 py-2 text-left text-[12.5px] text-violet-d">{tip}</p>}
       <div className="relative mx-auto mt-4 h-[330px] w-[300px]">
         <svg width="34" height="30" viewBox="0 0 34 30" className="absolute left-[133px] top-0 z-10" aria-hidden="true">
           <path d="M17 30L2 4Q0 0 5 0H29Q34 0 32 4Z" fill="#17132B" />
