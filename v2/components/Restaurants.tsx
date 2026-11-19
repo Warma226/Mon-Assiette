@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Icon } from './Icon';
@@ -13,6 +13,9 @@ const ERR: Record<string, string> = {
   google: 'Google ne répond pas pour le moment. Réessaie.',
 };
 
+// Carte Google (Maps Embed API : gratuite, sans limite d'affichage). Clé publique, restreinte au site.
+const MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY ?? '';
+
 export function Restaurants({ plus, favorites, initialQuery = '' }: { plus: boolean; favorites: string[]; initialQuery?: string }) {
   const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
   const [places, setPlaces] = useState<Place[] | null>(null);
@@ -22,6 +25,19 @@ export function Restaurants({ plus, favorites, initialQuery = '' }: { plus: bool
   const [price, setPrice] = useState(0);
   const [favs, setFavs] = useState(new Set(favorites));
   const [left, setLeft] = useState<number | null>(null);
+  const [selected, setSelected] = useState<Place | null>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+
+  const mapSrc = !MAPS_KEY || !pos
+    ? null
+    : selected
+      ? `https://www.google.com/maps/embed/v1/place?key=${MAPS_KEY}&language=fr&q=place_id:${encodeURIComponent(selected.id)}`
+      : `https://www.google.com/maps/embed/v1/search?key=${MAPS_KEY}&language=fr&zoom=14&center=${pos.lat},${pos.lng}&q=${encodeURIComponent((query.trim() || 'restaurants') + ' restaurant')}`;
+
+  function show(p: Place) {
+    setSelected(p);
+    mapRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   function locate(): Promise<{ lat: number; lng: number }> {
     if (pos) return Promise.resolve(pos);
@@ -51,6 +67,7 @@ export function Restaurants({ plus, favorites, initialQuery = '' }: { plus: bool
       } else {
         setPlaces(data.places);
         setLeft(data.left);
+        setSelected(null);
       }
     } catch {
       toast('Autorise la localisation pour voir les restaurants autour de toi.', 'erreur');
@@ -100,6 +117,25 @@ export function Restaurants({ plus, favorites, initialQuery = '' }: { plus: bool
         {left !== null && <small className="mt-2 block text-center text-[11px] text-gris">{left} recherche{left > 1 ? 's' : ''} restante{left > 1 ? 's' : ''} aujourd’hui</small>}
       </div>
 
+      {mapSrc && places && (
+        <div ref={mapRef} className="carte mt-3 scroll-mt-4 overflow-hidden p-0">
+          <iframe
+            key={mapSrc}
+            src={mapSrc}
+            title={selected ? `Carte : ${selected.name}` : 'Carte des restaurants autour de toi'}
+            className="block h-[300px] w-full border-0 lg:h-[380px]"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            allowFullScreen
+          />
+          {selected && (
+            <div className="flex items-center justify-between gap-2 px-4 py-2.5 text-[12.5px]">
+              <b className="truncate">{selected.name}</b>
+              <button type="button" onClick={() => setSelected(null)} className="flex-none font-semibold text-violet-d">Tous les restaurants</button>
+            </div>
+          )}
+        </div>
+      )}
       {places && places.length === 0 && <p className="carte mt-3 p-4 text-center text-[13px] text-gris">Aucun restaurant trouvé ici. Essaie une autre recherche.</p>}
       {places && places.length > 0 && (
         <div className="carte mt-3">
@@ -117,7 +153,8 @@ export function Restaurants({ plus, favorites, initialQuery = '' }: { plus: bool
                   {p.openNow !== null && <span className={p.openNow ? 'ml-1.5 text-emeraude' : 'ml-1.5 text-corail'}>{p.openNow ? 'Ouvert' : 'Fermé'}</span>}
                 </small>
                 {p.address && <small className="block truncate text-[11.5px] text-gris">{p.address}</small>}
-                <span className="mt-1.5 flex gap-2">
+                <span className="mt-1.5 flex flex-wrap gap-2">
+                  {mapSrc && <button type="button" onClick={() => show(p)} className={`pastille h-7 ${selected?.id === p.id ? 'pastille-on' : 'bg-white text-violet-d ring-1 ring-ligne'}`}>Voir sur la carte</button>}
                   {p.url && <a href={p.url} target="_blank" rel="noopener noreferrer" className="pastille h-7 bg-white text-violet-d ring-1 ring-ligne">Itinéraire</a>}
                   {plus && (
                     <button onClick={() => fav(p)} className={`pastille h-7 ${favs.has(p.id) ? 'pastille-on' : ''}`} aria-pressed={favs.has(p.id)}>
