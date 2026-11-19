@@ -11,7 +11,7 @@ const RULES: [string, string, string][] = [
   ['Moins de sucre et de sel', 'Sucres libres : moins de 10 % de l’énergie de la journée. Sel : moins de 5 g par jour, soit environ une cuillère à café. Dans l’appli : au plus un plat sucré par jour.', 'Recommandation de l’OMS'],
   ['Des légumineuses régulièrement', 'Haricot (niébé), lentilles, arachide : l’OMS les compte dans une alimentation saine. Dans l’appli : plusieurs fois par semaine, plutôt dans un repas principal.', 'OMS · rythme choisi par l’appli'],
   ['Repas principaux complets', 'Au déjeuner et au dîner : une base (tô, riz, igname…), une protéine et des légumes.', 'Guides alimentaires de la FAO (Bénin, Nigeria)'],
-  ['Léger en fin de soirée', 'La digestion réchauffe le corps, d’autant plus que le repas est lourd et riche en protéines, ce qui gêne l’endormissement. À partir de 21 h, l’appli ne propose que des plats légers.', 'Institut national du sommeil et de la vigilance (France)'],
+  ['Dîner tardif léger', 'La digestion réchauffe le corps, d’autant plus que le repas est lourd et riche en protéines, ce qui gêne l’endormissement. Quand le dîner est pris à partir de 21 h, l’appli ne propose que des plats légers.', 'Institut national du sommeil et de la vigilance (France)'],
   ['Peu de friture', 'Au plus un plat frit par jour, évité le matin et jamais proposé tard le soir.', 'Règle de l’appli (l’OMS conseille de limiter les graisses)'],
   ['Pas deux fois le même plat', 'Jamais le même plat deux fois dans la journée, et le moins possible dans la semaine.', 'Règle de l’appli'],
   ['Chaque plat à son moment', 'Un plat n’est proposé qu’aux moments de la journée où il se mange habituellement.', 'Règle de l’appli'],

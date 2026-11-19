@@ -63,7 +63,7 @@ export function Wheel({ categories, initialCategory, dishes, ranks, unlimited, d
   return (
     <div className="px-5 text-center">
       <p className="mb-3 text-[13px] text-gris">{categories.find((c) => c.id === cat)?.name ?? 'Maintenant'} : tourne, la roue choisit parmi les plats qui équilibrent le mieux ta journée.</p>
-      {tip && cat === 'tard' && <p className="mb-3 mt-1 rounded-xl bg-lilas-2 px-3 py-2 text-left text-[12.5px] text-violet-d">{tip}</p>}
+      {tip && <p className="mb-3 mt-1 rounded-xl bg-lilas-2 px-3 py-2 text-left text-[12.5px] text-violet-d">{tip}</p>}
       <div className="relative mx-auto mt-4 h-[330px] w-[300px]">
         <svg width="34" height="30" viewBox="0 0 34 30" className="absolute left-[133px] top-0 z-10" aria-hidden="true">
           <path d="M17 30L2 4Q0 0 5 0H29Q34 0 32 4Z" fill="#17132B" />

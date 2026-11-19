@@ -28,17 +28,17 @@ export default async function Roue() {
     have = new Set((avail ?? []).map((a) => a.ingredient_id as string));
   }
   const ranks = Object.fromEntries(categories.map((c) => [c.id, rankFor(pool, c.id, today, { have, seed: now.isoDay + (user?.id ?? '') }).slice(0, 8).map((d) => d.id)]));
-  // Fin de soirée : un choix « léger » en plus, sélectionné par défaut
+  // Dîner tardif (21 h et après) : la roue ne garde que des plats légers
   const late = isLate(now.hour);
-  if (late) ranks.tard = rankLate(pool, today, { seed: now.isoDay + (user?.id ?? '') }).slice(0, 8).map((d) => d.id);
+  if (late) ranks.diner = rankLate(pool, today, { seed: now.isoDay + (user?.id ?? '') }).slice(0, 8).map((d) => d.id);
   const keep = new Set(Object.values(ranks).flat());
-  const cats = [...(late ? [{ id: 'tard', name: 'Fin de soirée' }] : []), ...categories.map((c) => ({ id: c.id, name: c.name }))];
+  const cats = categories.map((c) => ({ id: c.id, name: c.name }));
   return (
     <Page>
       <TopBar title="La roue de Kalou" />
       <Wheel
         categories={cats}
-        initialCategory={late ? 'tard' : cat?.id ?? 'dejeuner'}
+        initialCategory={late ? 'diner' : cat?.id ?? 'dejeuner'}
         tip={late ? LATE_TIP : null}
         dishes={dishes.filter((d) => keep.has(d.id)).map((d) => ({ id: d.id, slug: d.slug, name: d.name, image_url: d.image_url, category_id: d.category_id, moments: d.moments }))}
         ranks={ranks}
