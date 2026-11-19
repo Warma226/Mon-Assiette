@@ -87,3 +87,42 @@ export async function setMenu(f: FormData) {
   revalidatePath('/', 'layout');
   back('/admin/menus', 'ok', `Menu enregistré : ${STATUS[status]}.`);
 }
+
+// Fiches des plats : durée, portions, niveau et coût relevé, pour tous les plats en une fois
+export async function saveSheets(f: FormData) {
+  const { supabase } = await requireStaff();
+  const path = '/admin/plats/fiches';
+  const city = str(f, 'city').slice(0, 60) || 'Ouagadougou';
+  const today = new Date().toISOString().slice(0, 10);
+  const ids = f.getAll('id').map(String);
+  let saved = 0;
+  let priced = 0;
+  for (const id of ids) {
+    const prep = num(f, `prep_${id}`);
+    const servings = num(f, `serv_${id}`);
+    const diff = str(f, `diff_${id}`) || null;
+    if (Number.isNaN(prep) || (prep !== null && (prep < 1 || prep > 1440))) back(path, 'err', 'Une durée est invalide (1 à 1440 minutes).');
+    if (Number.isNaN(servings) || (servings !== null && (servings < 1 || servings > 50))) back(path, 'err', 'Un nombre de portions est invalide (1 à 50).');
+    if (diff && !['facile', 'moyen', 'difficile'].includes(diff)) back(path, 'err', 'Niveau inconnu.');
+    const { error } = await supabase.from('ma2_dishes').update({ prep_minutes: prep, servings, difficulty: diff }).eq('id', id);
+    if (error) back(path, 'err', 'Enregistrement refusé : ' + error.message);
+    saved++;
+
+    const cmin = num(f, `cmin_${id}`);
+    const cmax = num(f, `cmax_${id}`);
+    if (cmin === null && cmax === null) continue;
+    if (Number.isNaN(cmin) || Number.isNaN(cmax) || cmin === null || cmax === null || cmin < 0 || cmax < cmin) back(path, 'err', 'Coût : indique un minimum et un maximum (le maximum au moins égal au minimum).');
+    const { data: last } = await supabase.from('ma2_food_prices').select('id, price_min, price_max').eq('dish_id', id).eq('status', 'publie').order('observed_at', { ascending: false }).limit(1).maybeSingle();
+    if (last && last.price_min === cmin && last.price_max === cmax) continue;
+    await supabase.from('ma2_food_prices').update({ status: 'archive' }).eq('dish_id', id).eq('status', 'publie');
+    const { error: e2 } = await supabase.from('ma2_food_prices').insert({
+      dish_id: id, country_id: 'bf', price_min: cmin, price_max: cmax,
+      unit: servings ? `pour ${servings} portion${servings > 1 ? 's' : ''}` : 'pour le plat',
+      source: `relevé au marché, ${city}`, observed_at: today, status: 'publie',
+    });
+    if (e2) back(path, 'err', 'Coût refusé : ' + e2.message);
+    priced++;
+  }
+  revalidatePath('/', 'layout');
+  back(path, 'ok', `${saved} fiches enregistrées${priced ? `, ${priced} coût${priced > 1 ? 's' : ''} mis à jour` : ''}.`);
+}

@@ -13,6 +13,7 @@ export default async function AdminDishes({ searchParams }: { searchParams: Prom
   return (
     <>
       <Notice ok={ok} err={err} />
+      <Link href="/admin/plats/fiches" className="carte mb-3 flex items-center justify-between px-4 py-3 text-sm font-semibold text-violet-d">Fiches : durée, portions, niveau et coût de tous les plats <span>›</span></Link>
       <div className="mb-3 flex flex-wrap gap-2">
         <Link href="/admin/plats" className={`pastille ${!statut ? 'pastille-on' : ''}`}>Tous</Link>
         {Object.entries(STATUS).map(([k, v]) => (

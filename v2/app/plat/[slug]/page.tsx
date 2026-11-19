@@ -75,7 +75,7 @@ export default async function Plat({ params }: { params: Promise<{ slug: string 
             </div>
           ))}
         </div>
-        {price && <p className="mt-2 text-[11px] text-gris">Coût estimé localement ({price.source}), pas un prix garanti.</p>}
+        {price && <p className="mt-2 text-[11px] text-gris">Coût total {price.unit}, {price.source} le {new Date(price.observed_at).toLocaleDateString('fr-FR')} : les prix varient, ce n’est pas un prix garanti.</p>}
 
         <h2 className="mb-2.5 mt-6 text-[17px] font-bold">Ingrédients</h2>
         <div className="carte">
