@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 
 export type Category = { id: string; name: string; sort: number; start_hour: number };
-export type Ingredient = { id: string; name: string; aliases: string[]; allergen: string | null };
+export type Ingredient = { id: string; name: string; aliases: string[]; allergen: string | null; food_group?: string | null };
 export type DishIngredient = { ingredient_id: string; quantity: number | null; unit: string | null; is_optional: boolean; substitutes: string | null; position: number; ingredient: Ingredient };
 export type Dish = {
   id: string;
@@ -79,7 +79,7 @@ export async function getDish(slug: string) {
 
 export async function getIngredients(): Promise<Ingredient[]> {
   const supabase = await createClient();
-  const { data } = await supabase.from('ma2_ingredients').select('id, name, aliases, allergen').order('name');
+  const { data } = await supabase.from('ma2_ingredients').select('id, name, aliases, allergen, food_group').order('name');
   return data ?? [];
 }
 

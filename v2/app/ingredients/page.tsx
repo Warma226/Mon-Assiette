@@ -26,7 +26,7 @@ export default async function Ingredients() {
   return (
     <Page>
       <TopBar title="Mes ingrédients" />
-      <IngredientMatcher ingredients={ingredients.map((i) => ({ id: i.id, name: i.name, aliases: i.aliases }))} dishes={slim} initial={saved} userId={user?.id ?? null} allergies={allergies} />
+      <IngredientMatcher ingredients={ingredients.map((i) => ({ id: i.id, name: i.name, aliases: i.aliases, group: i.food_group ?? null }))} dishes={slim} initial={saved} userId={user?.id ?? null} allergies={allergies} />
     </Page>
   );
 }

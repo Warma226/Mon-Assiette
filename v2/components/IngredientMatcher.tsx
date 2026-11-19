@@ -6,11 +6,29 @@ import { DishImage, Empty } from './ui';
 import { Icon } from './Icon';
 import { toast } from './Toast';
 
-type Ing = { id: string; name: string; aliases: string[] };
+type Ing = { id: string; name: string; aliases: string[]; group: string | null };
 type D = { id: string; slug: string; name: string; image_url: string | null; category_id: string; allergens: string[]; prep_minutes: number | null; items: { id: string; name: string; optional: boolean; substitutes: string | null }[] };
 
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const KEY = 'ma2:ingredients';
+
+// Rayons de la cuisine, dans l'ordre où on y pense
+const SHELVES: { id: string; label: string; groups: string[]; tint: string; on: string }[] = [
+  { id: 'base', label: 'Céréales et tubercules', groups: ['cereales'], tint: 'bg-[#FFF6D6]', on: 'bg-[#B7791F]' },
+  { id: 'leg', label: 'Haricots et graines', groups: ['legumineuses'], tint: 'bg-[#F6EDE3]', on: 'bg-[#8A5A2B]' },
+  { id: 'veg', label: 'Légumes et feuilles', groups: ['legumes'], tint: 'bg-[#E7F6EC]', on: 'bg-[#047857]' },
+  { id: 'fruit', label: 'Fruits', groups: ['fruits'], tint: 'bg-[#FFE9E4]', on: 'bg-[#D9381E]' },
+  { id: 'prot', label: 'Viande, poisson, œufs, lait', groups: ['proteines', 'laitiers'], tint: 'bg-[#ECE5FF]', on: 'bg-[#6C3CF0]' },
+  { id: 'epi', label: 'Huile, sucre et assaisonnements', groups: ['matieres_grasses', 'sucres', 'condiments'], tint: 'bg-[#F1F0F5]', on: 'bg-[#3B3456]' },
+];
+const EMOJI: [RegExp, string][] = [
+  [/arachide/, '🥜'], [/attieke|riz|fonio/, '🍚'], [/avocat/, '🥑'], [/carotte/, '🥕'], [/chou/, '🥬'], [/citron/, '🍋'], [/concombre/, '🥒'],
+  [/mais/, '🌽'], [/mil|sorgho/, '🌾'], [/feuilles/, '🍃'], [/bissap|hibiscus/, '🌺'], [/gari/, '🥣'], [/gingembre/, '🫚'], [/gombo/, '🫑'],
+  [/zamne|acacia|soumbala|sesame/, '🫘'], [/haricot|niebe/, '🫘'], [/huile/, '🫗'], [/igname|patate/, '🍠'], [/lait/, '🥛'], [/mangue/, '🥭'],
+  [/mouton|boeuf|viande/, '🥩'], [/oeuf/, '🥚'], [/oignon/, '🧅'], [/pain/, '🥖'], [/piment/, '🌶️'], [/poisson/, '🐟'], [/pomme de terre/, '🥔'],
+  [/poulet/, '🍗'], [/sel/, '🧂'], [/sucre/, '🍬'], [/tomate/, '🍅'],
+];
+const emoji = (name: string) => EMOJI.find(([r]) => r.test(norm(name).replace(/œ/g, 'oe')))?.[1] ?? '🥄';
 
 // « Que cuisiner avec mes ingrédients ? » (cahier §5.5) : disponibles, manquants, substitutions, temps.
 export function IngredientMatcher({ ingredients, dishes, initial, userId, allergies }: { ingredients: Ing[]; dishes: D[]; initial: string[]; userId: string | null; allergies: string[] }) {
@@ -72,23 +90,46 @@ export function IngredientMatcher({ ingredients, dishes, initial, userId, allerg
         <Icon name="search" size={20} color="#6B6585" />
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Chercher un ingrédient…" aria-label="Chercher un ingrédient" />
       </label>
-      <div className="mt-3.5 flex flex-wrap gap-2">
-        {shown.map((i) => {
-          const on = have.includes(i.id);
-          return (
-            <button key={i.id} type="button" onClick={() => toggle(i.id)} aria-pressed={on} className={`pastille h-[34px] ${on ? 'pastille-on' : 'bg-white'}`}>
-              <Icon name={on ? 'check' : 'plus'} size={13} color={on ? '#fff' : '#6C3CF0'} width={2.5} /> {i.name}
-            </button>
-          );
-        })}
-      </div>
+      {SHELVES.map((sh) => {
+        const list = shown.filter((i) => sh.groups.includes(i.group ?? 'condiments'));
+        if (!list.length) return null;
+        const n = list.filter((i) => have.includes(i.id)).length;
+        return (
+          <section key={sh.id} className="mt-5">
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-[14px] font-bold">{sh.label}</h3>
+              {n > 0 && <small className="text-[11.5px] font-semibold text-violet-d">{n} choisi{n > 1 ? 's' : ''}</small>}
+            </div>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+              {list.map((i) => {
+                const on = have.includes(i.id);
+                return (
+                  <button key={i.id} type="button" onClick={() => toggle(i.id)} aria-pressed={on}
+                    className={`relative flex h-[86px] flex-col items-center justify-center gap-1 rounded-2xl px-1.5 text-center text-[12px] font-semibold leading-tight transition ${on ? `${sh.on} text-white shadow-[0_6px_16px_rgba(23,19,43,0.18)]` : `${sh.tint} text-encre`}`}>
+                    {on && <span className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white"><Icon name="check" size={12} color="#17132B" width={3} /></span>}
+                    <span className="text-[26px] leading-none" aria-hidden="true">{emoji(i.name)}</span>
+                    <span className="line-clamp-2">{i.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
+      {shown.length === 0 && <p className="mt-4 text-center text-[13px] text-gris">Aucun ingrédient ne correspond à « {q} ».</p>}
+      {have.length > 0 && (
+        <div className="sticky bottom-[96px] z-30 mt-4 flex items-center gap-2 rounded-full bg-encre p-1.5 pl-4 text-white shadow-[0_10px_30px_rgba(23,19,43,0.3)] lg:bottom-4">
+          <span className="flex-1 text-[13px] font-semibold">{have.length} ingrédient{have.length > 1 ? 's' : ''} · {results.length} plat{results.length > 1 ? 's' : ''} possible{results.length > 1 ? 's' : ''}</span>
+          <a href="#resultats" className="inline-flex h-10 items-center rounded-full bg-[#FFD54A] px-4 text-[13px] font-bold text-encre">Voir les plats</a>
+        </div>
+      )}
       {!userId && have.length > 0 && (
         <p className="mt-3 text-xs text-gris">
           Enregistré sur ce téléphone. <Link href="/connexion" className="font-semibold text-violet-d underline">Connecte-toi</Link> pour le retrouver partout.
         </p>
       )}
 
-      <div className="mb-3 mt-6 flex items-center justify-between">
+      <div id="resultats" className="mb-3 mt-6 flex scroll-mt-4 items-center justify-between">
         <h2 className="titre-sec">Tu peux préparer</h2>
         {results.length > 0 && <small className="text-gris">{results.length} plats</small>}
       </div>
