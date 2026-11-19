@@ -114,11 +114,12 @@ export default async function Plat({ params }: { params: Promise<{ slug: string 
               <p className="mt-3 text-[11px] leading-relaxed text-gris">
                 Source :{' '}
                 {recipe.source.split(' ; ').map((part: string, i: number) => {
-                  const [label, url] = part.split(' — ');
+                  const [label, rest = ''] = part.split(' — ');
+                  const [url, ...extra] = rest.split(' ');
                   return (
                     <span key={i}>
                       {i ? ' ; ' : ''}
-                      {url?.startsWith('http') ? <a href={url} target="_blank" rel="noopener noreferrer" className="underline">{label}</a> : part}
+                      {url?.startsWith('http') ? <><a href={url} target="_blank" rel="noopener noreferrer" className="underline">{label}</a>{extra.length ? ` ${extra.join(' ')}` : ''}</> : part}
                     </span>
                   );
                 })}
