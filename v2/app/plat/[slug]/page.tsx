@@ -38,7 +38,7 @@ export default async function Plat({ params }: { params: Promise<{ slug: string 
     { icon: 'users2' as const, color: '#047857', value: dish.servings ? String(dish.servings) : '—', label: 'Portions' },
     { icon: 'bolt' as const, color: '#D9381E', value: dish.difficulty ? dish.difficulty[0].toUpperCase() + dish.difficulty.slice(1) : '—', label: 'Niveau' },
     { icon: 'coin' as const, color: '#B7791F', value: price ? `${price.price_min}–${price.price_max} F` : '—', label: 'Coût estimé' },
-  ];
+  ].filter((f) => f.value !== '—');
 
   return (
     <Page>
@@ -64,7 +64,7 @@ export default async function Plat({ params }: { params: Promise<{ slug: string 
             <span>Attention : ce plat contient un aliment que tu as signalé ({warn.join(', ')}).</span>
           </div>
         )}
-        <div className="mt-4 grid grid-cols-4 gap-2">
+        {facts.length > 0 && <div className="mt-4 grid grid-cols-4 gap-2">
           {facts.map((f) => (
             <div key={f.label} className="carte px-1.5 py-2.5 text-center">
               <span className="flex justify-center">
@@ -74,7 +74,7 @@ export default async function Plat({ params }: { params: Promise<{ slug: string 
               <small className="text-[10.5px] text-gris">{f.label}</small>
             </div>
           ))}
-        </div>
+        </div>}
         {price && <p className="mt-2 text-[11px] text-gris">Coût total {price.unit}, {price.source} le {new Date(price.observed_at).toLocaleDateString('fr-FR')} : les prix varient, ce n’est pas un prix garanti.</p>}
 
         <h2 className="mb-2.5 mt-6 text-[17px] font-bold">Ingrédients</h2>
@@ -98,10 +98,10 @@ export default async function Plat({ params }: { params: Promise<{ slug: string 
             );
           })}
         </div>
-        <p className="mt-2 text-[11px] text-gris">Quantités en cours de vérification par l’équipe éditoriale.</p>
 
-        <h2 className="mb-2.5 mt-6 text-[17px] font-bold">Préparation</h2>
         {recipe?.steps.length ? (
+          <>
+            <h2 className="mb-2.5 mt-6 text-[17px] font-bold">Préparation</h2>
           <ol className="space-y-3">
             {recipe.steps.map((s) => (
               <li key={s.position} className="flex gap-3">
@@ -110,13 +110,12 @@ export default async function Plat({ params }: { params: Promise<{ slug: string 
               </li>
             ))}
           </ol>
-        ) : (
-          <div className="carte p-4 text-[13px] text-gris">La recette détaillée est en cours de rédaction et de vérification. Elle apparaîtra ici dès qu’elle sera validée.</div>
-        )}
+          </>
+        ) : null}
 
+        {nutrition && (
         <div className="carte mt-4 p-4">
           <b className="text-sm">Nutrition</b>
-          {nutrition ? (
             <dl className="mt-2 grid grid-cols-3 gap-2 text-center text-xs">
               {[
                 ['Énergie', nutrition.energy_kcal, 'kcal'],
@@ -135,11 +134,9 @@ export default async function Plat({ params }: { params: Promise<{ slug: string 
                   </div>
                 ))}
             </dl>
-          ) : (
-            <p className="mt-1.5 text-[12.5px] text-gris">Valeurs en cours de vérification. Elles s’afficheront dès qu’une source fiable les confirme.</p>
-          )}
           <p className="mt-2 text-[11px] text-gris">Ces informations ne sont pas un avis médical.</p>
         </div>
+        )}
 
         <div className="mt-5 flex gap-2.5">
           <AddToPlan dishId={dish.id} defaultCategory={dish.category_id} loggedIn={!!user} />

@@ -64,7 +64,6 @@ export default async function Courses({ searchParams }: { searchParams: Promise<
             <button className="text-[12.5px] text-violet-d underline">Retirer les articles cochés</button>
           </form>
         )}
-        <p className="mt-4 text-[11.5px] text-gris">Les quantités ne sont pas encore indiquées : elles s’afficheront quand les recettes auront été vérifiées.</p>
       </div>
     </Page>
   );

@@ -74,7 +74,7 @@ export default async function Decouvrir({ searchParams }: { searchParams: Promis
         ) : (
           <Empty
             title="Aucun plat trouvé"
-            text={duree ? 'Les durées de préparation sont en cours de vérification : ce filtre sera bientôt plus utile.' : 'Essaie un autre mot : un plat, un ingrédient ou un moment de la journée.'}
+            text={duree ? 'Essaie une autre durée.' : 'Essaie un autre mot : un plat, un ingrédient ou un moment de la journée.'}
             action={
               <Link href="/decouvrir" className="btn-violet h-11 text-sm">
                 Voir tous les plats

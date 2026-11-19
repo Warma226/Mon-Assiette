@@ -82,7 +82,6 @@ export default async function Budget({ searchParams }: { searchParams: Promise<{
             </div>
           ))}
         </div>
-        <p className="mt-3 text-[11.5px] text-gris">Le coût estimé de ton planning s’affichera quand les prix du marché auront été relevés et vérifiés.</p>
       </div>
     </Page>
   );

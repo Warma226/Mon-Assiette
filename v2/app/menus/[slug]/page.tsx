@@ -75,7 +75,6 @@ export default async function Menu({ params, searchParams }: { params: Promise<{
                 </div>
               </section>
             ))}
-            {items.length === 0 && <p className="carte mt-4 p-4 text-[13px] text-gris">Les plats de ce menu sont en cours de vérification.</p>}
           </>
         )}
       </div>
